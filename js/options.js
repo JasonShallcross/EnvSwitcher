@@ -41,7 +41,7 @@ $(function () {
 
     function row(name, url, project, icon) {
         var blank = (name == '') ? ' class="blank"' : '';
-        return '<li' + blank + '><img src="/images/sort.png"> <input name="icon" value="' + icon + '"> <input placeholder="name" name="name" value="' + name + '"><input placeholder="url" name="url" value="' + url + '"><input placeholder="project" name="project" value="' + project + '"></li>';
+        return '<li' + blank + '><img src="/images/sort.png"> <input title="Icon" placeholder="&gt;" name="icon" value="' + icon + '"> <input placeholder="name" name="name" value="' + name + '"><input placeholder="url" name="url" value="' + url + '"><input placeholder="project" name="project" value="' + project + '"></li>';
     }
 
     function nameSort(name) {
