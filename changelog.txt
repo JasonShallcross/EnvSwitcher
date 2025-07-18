@@ -1,5 +1,8 @@
 Changelog
 
+3.7 FF Friendly
+3.6 Custom icons
+3.5 Minor tweaks
 3.4 Add current site
 3.3 Debug bar/off
 3.2 Project filter

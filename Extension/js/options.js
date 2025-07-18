@@ -79,11 +79,14 @@ $(function () {
 
     chrome.storage.local.get({sites: []}, function(data) {
         var lis = [];
-        data.sites.forEach(function(site) {
-            lis.push(row(site.name, site.url, site.project, site.icon || ''));
-        });
 
-        lis.push(row('', '', '', ''));
+        if (data) {
+            data.sites.forEach(function(site) {
+                lis.push(row(site.name, site.url, site.project, site.icon || ''));
+            });
+
+            lis.push(row('', '', '', ''));
+        }
 
         $sites.html(lis.join("\n"));
 
@@ -200,6 +203,10 @@ $(function () {
 
         chrome.storage.local.set({sites: sites}, function() {
             $save.trigger('_disable');
+
+            if (chrome.runtime.lastError) {
+                console.error("Error saving data: ", chrome.runtime.lastError);
+            }
         });
     });
 
@@ -249,8 +256,8 @@ $(function () {
             getSites();
 
             var exists = [];
-            sites.forEach(function(site) {
-                exists.push(site.url);
+            sites.forEach(function(site, i) {
+                exists[site.url] = i;
             });
 
             var lines = e.target.result.split("\n");
@@ -262,6 +269,9 @@ $(function () {
                     if (values.length < 3) {
                         values.push('');
                     }
+                    if (values.length < 4) {
+                        values.push('');
+                    }
 
                     var name    = values[0].replace('"', '');
                     var url     = values[1].replace('"', '');
@@ -270,8 +280,13 @@ $(function () {
 
                     url = url.replace(/\/$/, '');
 
-                    if (exists.indexOf(url) == -1) {
-                        $(row(name, url, project)).insertBefore('li.blank');
+                    let $li = $(row(name, url, project, icon));
+
+                    let index = exists[url];
+                    if (index !== undefined) {
+                        $sites.find('li').eq(index).replaceWith($li);
+                    } else {
+                        $li.insertBefore('li.blank');
                     }
                 }
             });
@@ -288,13 +303,14 @@ $(function () {
 
         var lines = [];
         sites.forEach(function(site) {
-            lines.push('"' + site.name + '", "' + site.url + '", "' + site.project + '"');
+            lines.push('"' + site.name + '", "' + site.url + '", "' + site.project + '", "' + site.icon + '"');
         });
 
         var csv = lines.join("\n");
+        var blob = new Blob([csv], {type: "text/csv;charset=utf-8"});
 
         chrome.downloads.download({
-            'url': encodeURI('data:text/csv,' + csv),
+            'url': URL.createObjectURL(blob),
             'filename': 'sites.csv'
         });
     });
