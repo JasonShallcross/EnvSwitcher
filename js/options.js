@@ -22,12 +22,14 @@ $(function () {
             var name    = $(this).find('input[name="name"]').val();
             var url     = $(this).find('input[name="url"]').val();
             var project = $(this).find('input[name="project"]').val();
+            var icon    = $(this).find('input[name="icon"]').val();
 
             if (name != '' && url != '') {
                 var site = {
                     'name'    : name,
                     'url'     : url,
                     'project' : project,
+                    'icon'    : icon,
                 };
 
                 sites.push(site);
@@ -37,9 +39,9 @@ $(function () {
         refreshProjects();
     }
 
-    function row(name, url, project) {
+    function row(name, url, project, icon) {
         var blank = (name == '') ? ' class="blank"' : '';
-        return '<li' + blank + '><img src="/images/sort.png"> <input placeholder="name" name="name" value="' + name + '"><input placeholder="url" name="url" value="' + url + '"><input placeholder="project" name="project" value="' + project + '"></li>';
+        return '<li' + blank + '><img src="/images/sort.png"> <input name="icon" value="' + icon + '"> <input placeholder="name" name="name" value="' + name + '"><input placeholder="url" name="url" value="' + url + '"><input placeholder="project" name="project" value="' + project + '"></li>';
     }
 
     function nameSort(name) {
@@ -64,7 +66,7 @@ $(function () {
 
         $lis.each(function() {
             var $li = $(this);
-            var project = $li.find('input:eq(2)').val();
+            var project = $li.find('input:eq(3)').val();
 
             if (project && projects.indexOf(project) == -1) {
                 projects.push(project);
@@ -78,10 +80,10 @@ $(function () {
     chrome.storage.local.get({sites: []}, function(data) {
         var lis = [];
         data.sites.forEach(function(site) {
-            lis.push(row(site.name, site.url, site.project));
+            lis.push(row(site.name, site.url, site.project, site.icon || ''));
         });
 
-        lis.push(row('', '', ''));
+        lis.push(row('', '', '', ''));
 
         $sites.html(lis.join("\n"));
 
@@ -99,7 +101,7 @@ $(function () {
 
         $lis.each(function() {
             var $li = $(this);
-            var project = $li.find('input:eq(2)').val();
+            var project = $li.find('input:eq(3)').val();
             var show = (project == '' || project == filter);
 
             if (show) {
@@ -228,7 +230,7 @@ $(function () {
 
         var lis = [];
         sites.forEach(function(site) {
-            lis.push(row(site.name, site.url, site.project));
+            lis.push(row(site.name, site.url, site.project, site.icon));
         });
 
         lis.push(row('', '', ''));
@@ -264,6 +266,7 @@ $(function () {
                     var name    = values[0].replace('"', '');
                     var url     = values[1].replace('"', '');
                     var project = values[2].replace('"', '');
+                    var icon    = values[3].replace('"', '');
 
                     url = url.replace(/\/$/, '');
 

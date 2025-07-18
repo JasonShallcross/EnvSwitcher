@@ -128,6 +128,12 @@ ul#sites {
     display: none;
     letter-spacing: 0.5px;
 
+    span {
+        margin-right: 0.1em;
+        font-size: 20px;
+        line-height: 1;
+    }
+
     a {
         color: inherit;
     }
@@ -144,21 +150,6 @@ ul#sites {
 }
 #sites li a:hover {
     color: #000;
-}
-#sites li a:before {
-    content: 'chevron_right';
-    display: inline-block;
-    font-family: 'Material Symbols Outlined';
-    line-height: 1;
-    color: inherit;
-    vertical-align: middle;
-    font-size: 20px;
-}
-#sites li a.local:before {
-    content: 'construction';
-}
-#sites li a.production:before {
-    content: 'bolt';
 }
 #sites li.selected a {
     color: #00ABCE;
