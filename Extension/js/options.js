@@ -307,11 +307,13 @@ $(function () {
         });
 
         var csv = lines.join("\n");
-        var blob = new Blob([csv], {type: "text/csv;charset=utf-8"});
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
 
-        chrome.downloads.download({
-            'url': URL.createObjectURL(blob),
-            'filename': 'sites.csv'
-        });
+        let time = new Date().getTime();
+
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob); // works in DOM context
+        a.download = 'sites-' + time + '.csv';
+        a.click();
     });
 });

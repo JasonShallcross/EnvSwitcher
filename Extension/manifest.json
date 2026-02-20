@@ -3,12 +3,13 @@
         "default_icon": "images/env48.png",
         "default_title": "Switch to Environment",
         "default_popup": "html/popup.html"
-    }, 
+    },
     "name": "Switcher",
     "description": " - Take the current URL and switch environments",
     "icons": {
         "16": "images/env16.png",
-        "48": "images/env48.png"
+        "48": "images/env48.png",
+        "128": "images/env128.png"
     },
     "permissions": [
         "tabs",
