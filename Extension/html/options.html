@@ -1,32 +1,116 @@
 <!doctype html>
-<html>
-    <head>
-        <title>Switcher Options</title>
-        <script src="/js/jquery.js"></script>
-        <script src="/js/jquery-ui.js"></script>
-        <script src="/js/options.js"></script>
-        <link rel="stylesheet" type="text/css" href="/css/options.css">
-    </head>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Switcher Options</title>
+    <link rel="stylesheet" type="text/css" href="/css/options.css">
+</head>
+<body>
+    <main class="app-shell">
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">Browser extension settings</p>
+                <h1>Switcher <span class="version-label">v4.1.1</span></h1>
+                <p class="subtitle">Manage projects and the sites that belong to them.</p>
+            </div>
+            <div class="save-area">
+                <span id="save-status" class="save-status" aria-live="polite">All changes saved</span>
+                <button id="save" class="button button-primary" type="button" disabled>Save changes</button>
+            </div>
+        </header>
 
-    <body>
-        <form>
-            <select id="projects">
-            </select>
+        <section class="workspace" aria-label="Project and site management">
+            <aside class="project-panel">
+                <div class="panel-heading">
+                    <div>
+                        <h2>Projects</h2>
+                        <span id="project-count" class="count-badge">0</span>
+                    </div>
+                    <button id="add-project" class="icon-button" type="button" title="Add project" aria-label="Add project">+</button>
+                </div>
 
-            <h1>Switcher</h1>
+                <label class="search-box">
+                    <span class="visually-hidden">Search projects</span>
+                    <input id="project-search" type="search" placeholder="Search projects…" autocomplete="off">
+                </label>
 
-            <ul id="sites">
-            </ul>
+                <nav id="project-list" class="project-list" aria-label="Projects"></nav>
+                <p id="no-projects" class="empty-note" hidden>No projects yet.</p>
 
-            <button id="save" class="disabled">saved</button>
-            <button id="sort">Sort list</button>
-        </form>
+                <details class="data-panel">
+                    <summary>
+                        <span>
+                            <strong>Data</strong>
+                            <small>Import / Export</small>
+                        </span>
+                        <span class="chevron">⌄</span>
+                    </summary>
+                    <div class="data-panel-body">
+                        <div class="data-actions">
+                            <label class="button button-secondary file-button" for="file">Import CSV</label>
+                            <input type="file" id="file" accept=".csv,text/csv" hidden>
+                            <button id="export" class="button button-secondary" type="button">Export CSV</button>
+                        </div>
+                        <p id="import-status" class="import-status" aria-live="polite"></p>
+                        <details class="format-details">
+                            <summary>CSV format</summary>
+                            <code>"name", "url", "project", "icon"</code>
+                            <p>Duplicate or invalid URLs are skipped.</p>
+                        </details>
+                    </div>
+                </details>
+            </aside>
 
-        <h1>Import CSV file</h1>
-        <code>"name", "url", "project", "icon"</code>
-        <input type="file" id="file" accept=".csv">
+            <section class="site-panel">
+                <div id="project-empty-state" class="large-empty-state">
+                    <div class="empty-icon">←</div>
+                    <h2>Select a project</h2>
+                    <p>Choose a project on the left, or create a new one.</p>
+                </div>
 
-        <h1>Export</h1>
-        <button id="export">Export file</button>
-    </body>
+                <div id="project-editor" hidden>
+                    <div class="project-toolbar">
+                        <div class="project-title-block">
+                            <label for="project-name">Project name</label>
+                            <input id="project-name" class="project-name-input" type="text" autocomplete="off">
+                        </div>
+                        <div class="toolbar-actions">
+                            <button id="sort" class="button button-secondary" type="button">Sort sites</button>
+                            <button id="delete-project" class="button button-danger-quiet" type="button">Delete project</button>
+                        </div>
+                    </div>
+
+                    <div class="sites-heading">
+                        <div>
+                            <h2>Sites</h2>
+                            <span id="site-count" class="count-badge">0</span>
+                        </div>
+                        <button id="add-site" class="button button-secondary" type="button">+ Add site</button>
+                    </div>
+
+                    <div class="site-table" role="table" aria-label="Sites in selected project">
+                        <div class="site-row site-row-header" role="row">
+                            <div class="drag-column" role="columnheader"><span class="visually-hidden">Reorder</span></div>
+                            <div role="columnheader">URL</div>
+                            <div role="columnheader">Name</div>
+                            <div role="columnheader">Icon</div>
+                            <div class="actions-column" role="columnheader"><span class="visually-hidden">Actions</span></div>
+                        </div>
+                        <ul id="sites" class="site-list"></ul>
+                    </div>
+
+                    <div id="sites-empty" class="sites-empty" hidden>
+                        <p>This project has no sites yet.</p>
+                        <button id="add-first-site" class="button button-secondary" type="button">Add the first site</button>
+                    </div>
+                </div>
+            </section>
+        </section>
+
+    </main>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/options.js"></script>
+</body>
 </html>

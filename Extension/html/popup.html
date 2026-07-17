@@ -1,47 +1,51 @@
 <!doctype html>
-<html>
-    <head>
-        <title>Environment Switcher</title>
-        <script src="/js/jquery.js"></script>
-        <script src="/js/popup.js"></script>
-        <link rel="stylesheet" type="text/css" href="/css/popup.css">
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    </head>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Switcher</title>
+    <link rel="stylesheet" href="/css/popup.css">
+    <script src="/js/jquery.js"></script>
+    <script src="/js/popup.js"></script>
+</head>
+<body>
+    <div id="dialog">
+        <header class="popup-header">
+            <div class="title-row">
+                <h1>Switcher <span id="version"></span></h1>
+                <nav id="tools" aria-label="Switcher tools">
+                    <a href="#edit" id="edit" class="icon-button" title="Edit this page in CP" aria-label="Edit this page in CP">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15.5V20h4.5L19.8 8.7l-4.5-4.5L4 15.5Zm17.7-9.6a1 1 0 0 0 0-1.4l-2.2-2.2a1 1 0 0 0-1.4 0l-1.7 1.7 4.5 4.5 1.8-1.6Z"/></svg>
+                    </a>
+                    <a href="#options" id="options" class="icon-button" title="Extension settings" aria-label="Extension settings">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a8 8 0 0 0-1.7-1L15 3h-4l-.4 2.9a8 8 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.7 7.7 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a8 8 0 0 0 1.7 1L11 21h4l.4-2.9a8 8 0 0 0 1.7-1l2.5 1 2-3.5L19.4 13ZM13 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg>
+                    </a>
+                </nav>
+            </div>
 
-    <body>
-        <div id="dialog">
-            <header>
-                <div id="tools">
-                    <a href="#edit" id="edit" title="Edit this page in CP" class="symbol">edit</a>
-                    <a href="#options" id="options" title="Extension settings" class="symbol">settings</a>
+            <select id="projects" aria-label="Project">
+                <option value="">Select a project</option>
+            </select>
+        </header>
+
+        <main id="site-panel">
+            <ul id="sites" aria-label="Project sites"></ul>
+            <button id="add" type="button">Add this site</button>
+        </main>
+
+        <footer>
+            <div id="debug" aria-label="Debug output">
+                <span class="debug-label" title="Debug output">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8h-2.8a5.7 5.7 0 0 0-1.1-1.6L17.7 4.8l-1.4-1.4-1.8 1.8A6.8 6.8 0 0 0 13 4.6V2h-2v2.6a6.8 6.8 0 0 0-1.5.6L7.7 3.4 6.3 4.8l1.6 1.6A5.7 5.7 0 0 0 6.8 8H4v2h2.2v2H4v2h2.2v.5A5.5 5.5 0 0 0 11.7 20h.6a5.5 5.5 0 0 0 5.5-5.5V14H20v-2h-2.2v-2H20V8Zm-4.2 6.5a3.5 3.5 0 0 1-7 0V10h7v4.5Z"/></svg>
+                </span>
+                <div class="debug-actions">
+                    <a href="#" title="Debug to toolbar" data-debug="true">Bar</a>
+                    <a href="#" title="Debug to file" data-debug="file">File</a>
+                    <a href="#" title="Debug to console" data-debug="console">Console</a>
+                    <a href="#" title="Disable debug" data-debug="false">Off</a>
                 </div>
-
-                <h1>Switcher</h1>
-                <select id="projects">
-                    <option>select</option>
-                </select>
-            </header>
-
-            <ul id="sites">
-            </ul>
-
-            <footer>
-                <button id="add">Add site to list</button>
-
-                <div id="debug">
-                    <p title="Debug bar">
-                        <span class="symbol">bug_report</span>
-                        <span>:</span>
-                    </p>
-
-                    <ul>
-                        <li><a href="#" title="Debug to bar"     data-debug="true"    class="symbol">toolbar</a></li>
-                        <li><a href="#" title="Debug to file"    data-debug="file"    class="symbol">text_snippet</a></li>
-                        <li><a href="#" title="Debug to console" data-debug="console" class="symbol">summarize</a></li>
-                        <li><a href="#" title="Disable Debug"    data-debug="false"   class="symbol">close</a></li>
-                    </ul>
-                </div>
-            </footer>
-        </div>
-    </body>
+            </div>
+        </footer>
+    </div>
+</body>
 </html>
