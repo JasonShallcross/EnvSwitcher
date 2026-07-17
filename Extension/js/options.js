@@ -111,7 +111,10 @@ $(function () {
         if (['dev', 'test', 'staging', 'stage', 'uat'].includes(first)) {
             return first === 'stage' ? 'Staging' : first.charAt(0).toUpperCase() + first.slice(1);
         }
-        if (hostname.includes('d3r')) return 'Staging';
+        if (parts.slice(1).includes('d3r')) {
+            const stagingName = first.split('-').filter(Boolean)[0];
+            return stagingName || 'Staging';
+        }
         return '-- LIVE --';
     }
 
