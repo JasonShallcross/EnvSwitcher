@@ -4,7 +4,7 @@
     "default_title": "Switch to Environment",
     "default_popup": "html/popup.html"
   },
-  "name": "Switcher v4.2.1",
+  "name": "Switcher v4.4",
   "description": "Switch the current page between project environments.",
   "icons": {
     "16": "images/env16.png",
@@ -21,7 +21,7 @@
     "https://*/*"
   ],
   "options_page": "html/options.html",
-  "version": "4.2.1",
+  "version": "4.4.0",
   "manifest_version": 3,
   "browser_specific_settings": {
     "gecko": {

@@ -39,7 +39,8 @@ function classifySite(site) {
     return 'other';
 }
 
-function renderProjectSites(client, $sites) {
+function renderProjectSites(client, $sites, query) {
+    query = (query || '').trim().toLowerCase();
     $sites.find('.site-divider').remove();
     $sites.find('.site-row').removeClass('show');
 
@@ -49,24 +50,28 @@ function renderProjectSites(client, $sites) {
         {key: 'staging', label: 'Staging'}
     ];
 
+    // Re-append visible rows in group order. This keeps every Local/Live row
+    // above the Staging divider even when the stored site order is mixed.
     groups.forEach(function(group) {
         var $rows = $sites.find('.site-row').filter(function() {
-            return $(this).data('client') == client && $(this).data('group') == group.key;
+            if ($(this).data('client') != client || $(this).data('group') != group.key) return false;
+            if (!query || group.key === 'primary') return true;
+            return String($(this).data('search') || '').indexOf(query) > -1;
         });
 
-        if (!$rows.length) {
-            return;
-        }
+        if (!$rows.length) return;
 
         if (group.label) {
             $('<li>', {
                 'class': 'site-divider show',
                 text: group.label
-            }).insertBefore($rows.first());
+            }).appendTo($sites);
         }
-        $rows.addClass('show');
+
+        $rows.detach().addClass('show').appendTo($sites);
     });
 }
+
 
 $(document).ready(function() {
     var manifest = chrome.runtime.getManifest();
@@ -102,8 +107,11 @@ $(document).ready(function() {
 
                 var $projects = $('#projects');
                 var $sites  = $('#sites');
+                var $siteSearch = $('#site-search');
 
-                for (var project in projects) {
+                Object.keys(projects)
+                    .sort(function(a, b) { return a.localeCompare(b, undefined, {sensitivity: 'base'}); })
+                    .forEach(function(project) {
                     $('<option value="' + escape(project) + '">' + project + '</option>').appendTo($projects);
 
                     for (var s in projects[project]) {
@@ -136,7 +144,8 @@ $(document).ready(function() {
                         var $row = $('<li>', {
                             'class': 'site-row' + (selected ? ' selected' : ''),
                             'data-client': escape(project),
-                            'data-group': group
+                            'data-group': group,
+                            'data-search': ((site.name || '') + ' ' + (site.url || '')).toLowerCase()
                         });
                         var $link = $('<a>', {
                             href: site.url + link.pathname + link.search,
@@ -147,10 +156,37 @@ $(document).ready(function() {
                         $('<svg viewBox="0 0 24 24" aria-hidden="true" class="site-open"><path d="M14 3h7v7h-2V6.4l-9.3 9.3-1.4-1.4L17.6 5H14V3ZM5 5h6v2H7v10h10v-4h2v6H5V5Z"/></svg>').appendTo($link);
                         $row.append($link).appendTo($sites);
                     }
+                });
+
+                function updateSiteSearch(project, focusSearch) {
+                    var count = $sites.find('.site-row').filter(function() {
+                        return $(this).data('client') == project;
+                    }).length;
+                    var shouldShow = count > 8;
+                    $siteSearch.prop('hidden', !shouldShow);
+                    if (!shouldShow) {
+                        $siteSearch.val('');
+                        return;
+                    }
+
+                    if (focusSearch) {
+                        // Popup focus can settle a fraction late in both Chrome and Firefox.
+                        // Focusing on the next paint, then once more shortly afterwards, is reliable.
+                        requestAnimationFrame(function() {
+                            $siteSearch[0].focus();
+                            setTimeout(function() { $siteSearch[0].focus(); }, 40);
+                        });
+                    }
                 }
 
                 $projects.on('change', function() {
-                    renderProjectSites($projects.val(), $sites);
+                    $siteSearch.val('');
+                    updateSiteSearch($projects.val(), true);
+                    renderProjectSites($projects.val(), $sites, '');
+                });
+
+                $siteSearch.on('input', function() {
+                    renderProjectSites($projects.val(), $sites, $(this).val());
                 });
 
                 if (selected_project) {

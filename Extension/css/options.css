@@ -186,6 +186,7 @@ input.invalid { border-color: var(--danger); background: var(--danger-soft); }
 .project-title-block label { display: block; margin-bottom: 5px; color: var(--muted); font-size: 12px; font-weight: 700; }
 .toolbar-actions { display: flex; gap: 8px; }
 .sites-heading { margin: 22px 0 12px; }
+.sites-actions { display: flex; gap: 8px; }
 
 .button {
     display: inline-flex;
@@ -302,4 +303,236 @@ input.invalid { border-color: var(--danger); background: var(--danger-soft); }
     .app-shell { width: calc(100% - 28px); margin-top: 18px; }
     .workspace { grid-template-columns: 220px minmax(0, 1fr); }
     .site-row { grid-template-columns: 30px minmax(220px, 1.5fr) minmax(130px, 1fr) 60px 38px; }
+}
+
+
+.bulk-dialog {
+    width: min(680px, calc(100vw - 40px));
+    padding: 0;
+    border: 0;
+    border-radius: 14px;
+    box-shadow: 0 24px 70px rgba(23, 33, 38, .26);
+    color: var(--text);
+}
+.bulk-dialog::backdrop { background: rgba(23, 33, 38, .42); }
+.bulk-form { padding: 22px; }
+.bulk-dialog-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 18px;
+}
+.bulk-dialog-header h2 { margin-bottom: 4px; font-size: 20px; }
+.bulk-dialog-header p { margin: 0; color: var(--muted); }
+.dialog-close {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 24px;
+    line-height: 1;
+}
+.dialog-close:hover { background: var(--page); color: var(--text); }
+.bulk-field { display: grid; gap: 6px; margin-bottom: 16px; }
+.bulk-field > span { font-size: 12px; font-weight: 700; color: var(--muted); }
+.bulk-field input,
+.bulk-field textarea {
+    width: 100%;
+    padding: 10px 11px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font: inherit;
+    resize: vertical;
+}
+.bulk-field small { color: var(--muted); }
+.bulk-field code { padding: 1px 4px; border-radius: 4px; background: #eef3f5; color: var(--text); }
+.bulk-preview-wrap {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fafcfc;
+}
+.bulk-preview-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+}
+.bulk-preview { max-height: 180px; margin: 0; padding: 6px 0; overflow-y: auto; list-style: none; }
+.bulk-preview:empty::before {
+    display: block;
+    padding: 18px 12px;
+    color: var(--muted);
+    text-align: center;
+    content: 'Enter site names or URLs to see a preview.';
+}
+.bulk-preview li {
+    display: grid;
+    grid-template-columns: minmax(80px, .55fr) minmax(0, 1.45fr);
+    gap: 12px;
+    padding: 6px 12px;
+    font-size: 12px;
+}
+.bulk-preview .preview-name { overflow: hidden; text-overflow: ellipsis; font-weight: 700; white-space: nowrap; }
+.bulk-preview .preview-url { overflow: hidden; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; }
+.bulk-preview li.skipped { opacity: .55; text-decoration: line-through; }
+.bulk-error { min-height: 20px; margin: 8px 0 0; color: var(--danger); font-size: 12px; }
+.bulk-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+/* Keep the editor within the viewport so global Data controls remain visible. */
+html,
+body {
+    height: 100%;
+}
+
+body {
+    overflow: hidden;
+}
+
+.app-shell {
+    display: flex;
+    height: calc(100vh - 40px);
+    margin-top: 20px;
+    margin-bottom: 20px;
+    flex-direction: column;
+}
+
+.page-header {
+    flex: 0 0 auto;
+}
+
+.workspace {
+    min-height: 0;
+    flex: 1 1 auto;
+}
+
+.project-panel,
+.site-panel,
+#project-editor {
+    min-height: 0;
+}
+
+.project-list {
+    flex: 1 1 auto;
+}
+
+.site-panel {
+    overflow-y: auto;
+}
+
+.bottom-save-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+}
+
+.bottom-save-hint {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+/* Keep the bottom save action visible while only the editor content scrolls. */
+.site-panel {
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+    flex-direction: column;
+}
+
+#project-empty-state {
+    flex: 1 1 auto;
+}
+
+#project-editor {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+}
+
+#project-editor[hidden] {
+    display: none;
+}
+
+.editor-scroll {
+    min-height: 0;
+    padding-right: 4px;
+    overflow-y: auto;
+    flex: 1 1 auto;
+}
+
+.bottom-save-bar {
+    flex: 0 0 auto;
+    margin: 18px -24px -24px;
+    padding: 14px 24px;
+    background: #fff;
+    box-shadow: 0 -8px 18px rgba(23, 33, 38, .04);
+}
+
+/* v4.4 layout: keep project and site controls visible; scroll only the lists. */
+.project-list {
+    align-content: start;
+    grid-auto-rows: min-content;
+    flex: 0 1 auto;
+    max-height: calc(100vh - 330px);
+    overflow-y: auto;
+}
+
+.site-panel {
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+    flex-direction: column;
+}
+
+#project-editor {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+}
+
+#project-editor[hidden] { display: none; }
+
+.project-toolbar,
+.sites-heading,
+.bottom-save-bar {
+    flex: 0 0 auto;
+}
+
+.sites-scroll {
+    min-height: 0;
+    padding-right: 4px;
+    overflow-y: auto;
+    flex: 1 1 auto;
+}
+
+.bottom-save-bar {
+    margin: 14px -24px -24px;
+    padding: 14px 24px;
+}
+
+.url-suggestion {
+    grid-column: 2 / 5;
+    margin: -3px 0 1px;
+    color: var(--accent-dark);
+    font-size: 12px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.url-suggestion.duplicate {
+    color: var(--danger);
 }

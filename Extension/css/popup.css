@@ -115,6 +115,23 @@ h1 {
     outline: 2px solid rgb(0 171 206 / 15%);
 }
 
+#site-search {
+    width: 100%;
+    height: 32px;
+    margin-top: 7px;
+    padding: 0 9px;
+    border: 1px solid #cfd6da;
+    border-radius: 7px;
+    color: var(--text);
+    font: inherit;
+    font-size: 12px;
+}
+
+#site-search:focus {
+    border-color: var(--accent);
+    outline: 2px solid rgb(0 171 206 / 15%);
+}
+
 #site-panel {
     min-height: 0;
     flex: 1;

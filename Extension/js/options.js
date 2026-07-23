@@ -9,7 +9,7 @@ $(function () {
     const $siteCount = $('#site-count');
     const $sites = $('#sites');
     const $sitesEmpty = $('#sites-empty');
-    const $save = $('#save');
+    const $save = $('.save-button');
     const $saveStatus = $('#save-status');
     const $importStatus = $('#import-status');
     const $file = $('#file');
@@ -193,12 +193,18 @@ $(function () {
             const $row = $(this);
             const index = Number($row.attr('data-index'));
             const site = sites[index];
-            const parsed = parseUrl(site.url);
+            const shorthand = getStagingSuggestion(site.url, index);
+            const parsed = shorthand ? { valid: false, message: 'Press Enter to complete this staging URL.' } : parseUrl(site.url);
             const duplicate = parsed.valid && seen.get(parsed.url.toLowerCase()) > 1;
             const $url = $row.find('[data-field="url"]');
             $row.find('.validation-message').remove();
             $url.removeClass('invalid');
             $row.removeClass('has-error');
+
+            if (shorthand) {
+                valid = false;
+                return;
+            }
 
             let message = '';
             if (!parsed.valid) message = parsed.message;
@@ -218,10 +224,11 @@ $(function () {
     function createSiteRow(site, index) {
         const $row = $('<li>', { class: 'site-row', 'data-index': index, role: 'row' });
         $('<button>', { type: 'button', class: 'drag-handle', title: 'Drag to reorder', 'aria-label': 'Drag to reorder', text: '⋮⋮' }).appendTo($row);
-        $('<input>', { class: 'site-input', type: 'url', value: site.url || '', placeholder: 'https://example.com', 'data-field': 'url', 'aria-label': 'URL' }).appendTo($row);
+        $('<input>', { class: 'site-input', type: 'text', inputmode: 'url', value: site.url || '', placeholder: 'URL or staging name', 'data-field': 'url', 'aria-label': 'URL', autocomplete: 'off' }).appendTo($row);
         $('<input>', { class: 'site-input', type: 'text', value: site.name || '', placeholder: 'Site name', 'data-field': 'name', 'aria-label': 'Name' }).appendTo($row);
         $('<input>', { class: 'site-input icon-input', type: 'text', value: site.icon || '', placeholder: '↗', maxlength: 4, 'data-field': 'icon', 'aria-label': 'Icon' }).appendTo($row);
         $('<button>', { type: 'button', class: 'delete-site', title: 'Delete site', 'aria-label': 'Delete site', text: '×' }).appendTo($row);
+        $('<div>', { class: 'url-suggestion', hidden: true, 'aria-live': 'polite' }).appendTo($row);
         return $row;
     }
 
@@ -270,11 +277,30 @@ $(function () {
 
     function addSite() {
         if (!selectedProject) return;
+
+        const existingBlankIndex = sites.findIndex(site =>
+            cleanProjectName(site.project) === selectedProject &&
+            !normalise(site.url) &&
+            !normalise(site.name)
+        );
+
+        if (existingBlankIndex !== -1) {
+            const $existing = $sites.find(`.site-row[data-index="${existingBlankIndex}"] [data-field="url"]`);
+            if ($existing.length) {
+                $existing.trigger('focus')[0].scrollIntoView({ block: 'nearest' });
+                return;
+            }
+        }
+
         sites.push({ name: '', url: '', project: selectedProject, icon: '' });
         renderProjects();
         renderSites();
         markDirty();
-        setTimeout(() => $sites.find('.site-row:last [data-field="url"]').trigger('focus'), 0);
+        setTimeout(() => {
+            const $input = $sites.find('.site-row:last [data-field="url"]');
+            $input.trigger('focus');
+            if ($input.length) $input[0].scrollIntoView({ block: 'nearest' });
+        }, 0);
     }
 
     function removeEmptySites() {
@@ -346,6 +372,62 @@ $(function () {
         }
     });
 
+    function getStagingSuggestion(rawValue, index) {
+        const value = normalise(rawValue).toLowerCase();
+        const template = inferStagingTemplate(selectedProject);
+        if (!template || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)) return null;
+
+        const parsed = parseUrl(template.replaceAll('{slug}', value));
+        if (!parsed.valid) return null;
+
+        const key = normaliseUrlKey(parsed.url);
+        const duplicate = sites.some((site, siteIndex) => siteIndex !== index && normaliseUrlKey(site.url) === key);
+        return { slug: value, name: value, url: parsed.url, duplicate: duplicate };
+    }
+
+    function updateUrlSuggestion($row, index) {
+        const $suggestion = $row.find('.url-suggestion');
+        const suggestion = getStagingSuggestion($row.find('[data-field="url"]').val(), index);
+        $row.removeData('url-suggestion');
+
+        if (!suggestion) {
+            $suggestion.prop('hidden', true).removeClass('duplicate').empty();
+            return null;
+        }
+
+        $row.data('url-suggestion', suggestion);
+        $suggestion
+            .toggleClass('duplicate', suggestion.duplicate)
+            .text(suggestion.duplicate
+                ? `${suggestion.url} is already in Switcher`
+                : `Press Enter to use ${suggestion.url}`)
+            .prop('hidden', false);
+        return suggestion;
+    }
+
+    function applyParsedUrl(index, $row, parsed, preferredName) {
+        const site = sites[index];
+        const key = normaliseUrlKey(parsed.url);
+        const duplicate = sites.some((other, otherIndex) => otherIndex !== index && normaliseUrlKey(other.url) === key);
+        if (duplicate) {
+            validateAllRows();
+            return false;
+        }
+
+        site.url = parsed.url;
+        if (!normalise(site.name)) site.name = preferredName || parsed.name;
+        if (!normalise(site.icon) && parsed.hostname.includes('.d3r.')) site.icon = '👁️';
+
+        $row.find('[data-field="url"]').val(site.url);
+        $row.find('[data-field="name"]').val(site.name);
+        $row.find('[data-field="icon"]').val(site.icon);
+        $row.find('.url-suggestion').prop('hidden', true).empty();
+        $row.removeData('url-suggestion').addClass('changed');
+        markDirty();
+        validateAllRows();
+        return true;
+    }
+
     $sites.on('input', '.site-input', function () {
         const $input = $(this);
         const $row = $input.closest('.site-row');
@@ -353,6 +435,7 @@ $(function () {
         const field = $input.attr('data-field');
         sites[index][field] = $input.val();
         $row.addClass('changed');
+        if (field === 'url') updateUrlSuggestion($row, index);
         markDirty();
         validateAllRows();
     });
@@ -361,21 +444,25 @@ $(function () {
         const $input = $(this);
         const $row = $input.closest('.site-row');
         const index = Number($row.attr('data-index'));
-        const site = sites[index];
+        const suggestion = getStagingSuggestion($input.val(), index);
+
+        // A short staging name is completed only with Enter. Tab remains ordinary navigation.
+        if (suggestion) {
+            updateUrlSuggestion($row, index);
+            validateAllRows();
+            return;
+        }
+
         const parsed = parseUrl($input.val());
         if (!parsed.valid) {
             validateAllRows();
             return;
         }
 
-        site.url = parsed.url;
-        $input.val(parsed.url);
-        if (!normalise(site.name)) {
-            site.name = parsed.name;
-            $row.find('[data-field="name"]').val(parsed.name);
-        }
+        if (!applyParsedUrl(index, $row, parsed)) return;
 
         if (projectSiteCount(selectedProject) === 1 && /^New project(?: \d+)?$/.test(selectedProject)) {
+            const site = sites[index];
             const oldProject = selectedProject;
             const suggested = parsed.project.charAt(0).toUpperCase() + parsed.project.slice(1);
             if (suggested && !uniqueProjects().some(project => project !== oldProject && project.toLowerCase() === suggested.toLowerCase())) {
@@ -387,12 +474,38 @@ $(function () {
                 renderProjects();
             }
         }
-        markDirty();
-        validateAllRows();
     });
 
     $sites.on('keydown', '.site-input', function (event) {
-        if (event.key === 'Enter') {
+        if (event.key !== 'Enter') return;
+
+        const $input = $(this);
+        const $row = $input.closest('.site-row');
+        const index = Number($row.attr('data-index'));
+        const field = $input.attr('data-field');
+
+        if (field === 'url') {
+            const suggestion = $row.data('url-suggestion');
+            if (suggestion) {
+                event.preventDefault();
+                if (suggestion.duplicate) return;
+                const parsed = parseUrl(suggestion.url);
+                if (parsed.valid && applyParsedUrl(index, $row, parsed, suggestion.name)) addSite();
+                return;
+            }
+
+            const raw = normalise($input.val());
+            const looksLikeUrl = /[.:/]/.test(raw) || raw.toLowerCase() === 'localhost';
+            const parsed = looksLikeUrl ? parseUrl(raw) : { valid: false };
+            if (parsed.valid) {
+                event.preventDefault();
+                if (applyParsedUrl(index, $row, parsed)) addSite();
+            }
+            return;
+        }
+
+        const site = sites[index];
+        if (normalise(site.url) && normalise(site.name) && validateAllRows()) {
             event.preventDefault();
             addSite();
         }
@@ -600,6 +713,147 @@ $(function () {
         anchor.click();
         anchor.remove();
         setTimeout(() => URL.revokeObjectURL(anchor.href), 1000);
+    });
+
+
+    const bulkDialog = document.getElementById('bulk-dialog');
+    const $bulkTemplate = $('#bulk-template');
+    const $bulkSites = $('#bulk-sites');
+    const $bulkPreview = $('#bulk-preview');
+    const $bulkSummary = $('#bulk-summary');
+    const $bulkError = $('#bulk-error');
+    const $bulkConfirm = $('#bulk-confirm');
+    let bulkCandidates = [];
+
+    function inferStagingTemplate(project) {
+        const projectSites = sites.filter(site => cleanProjectName(site.project) === project);
+        for (const site of projectSites) {
+            const parsed = parseUrl(site.url);
+            if (!parsed.valid || !parsed.hostname.includes('.d3r.')) continue;
+            const labels = parsed.hostname.split('.');
+            const hostParts = labels[0].split('-').filter(Boolean);
+            if (hostParts.length < 2) continue;
+            hostParts[0] = '{slug}';
+            labels[0] = hostParts.join('-');
+            return `https://${labels.join('.')}`;
+        }
+        return '';
+    }
+
+    function splitBulkEntries(value) {
+        return String(value || '')
+            .split(/[\n,]+/)
+            .map(item => item.trim())
+            .filter(Boolean);
+    }
+
+    function slugify(value) {
+        return normalise(value)
+            .toLowerCase()
+            .replace(/[^a-z0-9-]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .replace(/-{2,}/g, '-');
+    }
+
+    function buildBulkCandidates() {
+        const entries = splitBulkEntries($bulkSites.val());
+        const template = normalise($bulkTemplate.val());
+        const existingUrls = new Set(sites.map(site => normaliseUrlKey(site.url)).filter(Boolean));
+        const incomingUrls = new Set();
+        const candidates = [];
+        let templateError = '';
+
+        entries.forEach(entry => {
+            const isFullUrl = /^[a-z][a-z0-9+.-]*:\/\//i.test(entry);
+            let name = '';
+            let parsed;
+
+            if (isFullUrl) {
+                parsed = parseUrl(entry);
+                name = parsed.valid ? parsed.name : entry;
+            } else {
+                const slug = slugify(entry);
+                name = normalise(entry);
+                if (!template) {
+                    templateError = 'Enter a template for short site names.';
+                    parsed = { valid: false, message: templateError };
+                } else if (!template.includes('{slug}')) {
+                    templateError = 'The template must contain {slug}.';
+                    parsed = { valid: false, message: templateError };
+                } else if (!slug) {
+                    parsed = { valid: false, message: 'This site name cannot be turned into a URL slug.' };
+                } else {
+                    parsed = parseUrl(template.replaceAll('{slug}', slug));
+                }
+            }
+
+            const key = parsed.valid ? normaliseUrlKey(parsed.url) : '';
+            const duplicate = Boolean(key && (existingUrls.has(key) || incomingUrls.has(key)));
+            if (key) incomingUrls.add(key);
+            candidates.push({
+                name: name,
+                url: parsed.valid ? parsed.url : '',
+                valid: parsed.valid,
+                duplicate: duplicate,
+                message: parsed.valid ? (duplicate ? 'Duplicate' : '') : parsed.message
+            });
+        });
+
+        bulkCandidates = candidates;
+        $bulkPreview.empty();
+        candidates.forEach(candidate => {
+            const $item = $('<li>', { class: candidate.valid && !candidate.duplicate ? '' : 'skipped' });
+            $('<span>', { class: 'preview-name', text: candidate.name || 'Invalid entry' }).appendTo($item);
+            $('<span>', {
+                class: 'preview-url',
+                text: candidate.valid ? candidate.url + (candidate.duplicate ? ' · duplicate' : '') : candidate.message
+            }).appendTo($item);
+            $bulkPreview.append($item);
+        });
+
+        const addable = candidates.filter(candidate => candidate.valid && !candidate.duplicate).length;
+        const skipped = candidates.length - addable;
+        $bulkSummary.text(entries.length
+            ? `${addable} to add${skipped ? `, ${skipped} skipped` : ''}`
+            : 'Nothing to add yet');
+        $bulkError.text(templateError);
+        $bulkConfirm.prop('disabled', addable === 0 || Boolean(templateError));
+        $bulkConfirm.text(addable === 1 ? 'Add 1 site' : `Add ${addable} sites`);
+    }
+
+    $('#bulk-add-site').on('click', function () {
+        if (!selectedProject) return;
+        $bulkTemplate.val(inferStagingTemplate(selectedProject));
+        $bulkSites.val('');
+        $bulkError.text('');
+        buildBulkCandidates();
+        bulkDialog.showModal();
+        setTimeout(() => $bulkSites.trigger('focus'), 0);
+    });
+
+    $bulkTemplate.add($bulkSites).on('input', buildBulkCandidates);
+
+    $bulkConfirm.on('click', function () {
+        const addable = bulkCandidates.filter(candidate => candidate.valid && !candidate.duplicate);
+        if (!addable.length || !selectedProject) return;
+
+        addable.forEach(candidate => {
+            sites.push({
+                name: candidate.name,
+                url: candidate.url,
+                project: selectedProject,
+                icon: candidate.url.includes('.d3r.') ? '👁️' : ''
+            });
+        });
+
+        bulkDialog.close();
+        renderProjects();
+        renderSites();
+        markDirty(`${addable.length} site${addable.length === 1 ? '' : 's'} added. Save changes to finish.`);
+    });
+
+    bulkDialog.addEventListener('click', function (event) {
+        if (event.target === bulkDialog) bulkDialog.close();
     });
 
     window.addEventListener('beforeunload', function (event) {

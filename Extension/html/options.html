@@ -11,12 +11,12 @@
         <header class="page-header">
             <div>
                 <p class="eyebrow">Browser extension settings</p>
-                <h1>Switcher <span class="version-label">v4.1.1</span></h1>
+                <h1>Switcher <span class="version-label">v4.4</span></h1>
                 <p class="subtitle">Manage projects and the sites that belong to them.</p>
             </div>
             <div class="save-area">
                 <span id="save-status" class="save-status" aria-live="polite">All changes saved</span>
-                <button id="save" class="button button-primary" type="button" disabled>Save changes</button>
+                <button id="save" class="button button-primary save-button" type="button" disabled>Save changes</button>
             </div>
         </header>
 
@@ -86,9 +86,13 @@
                             <h2>Sites</h2>
                             <span id="site-count" class="count-badge">0</span>
                         </div>
-                        <button id="add-site" class="button button-secondary" type="button">+ Add site</button>
+                        <div class="sites-actions">
+                            <button id="bulk-add-site" class="button button-secondary" type="button" title="Add several staging sites from a URL template">Bulk add staging</button>
+                            <button id="add-site" class="button button-secondary" type="button">+ Add site</button>
+                        </div>
                     </div>
 
+                    <div class="sites-scroll">
                     <div class="site-table" role="table" aria-label="Sites in selected project">
                         <div class="site-row site-row-header" role="row">
                             <div class="drag-column" role="columnheader"><span class="visually-hidden">Reorder</span></div>
@@ -104,9 +108,55 @@
                         <p>This project has no sites yet.</p>
                         <button id="add-first-site" class="button button-secondary" type="button">Add the first site</button>
                     </div>
+                    </div>
+
+                    <div class="bottom-save-bar">
+                        <span class="bottom-save-hint">Changes are stored only when you save.</span>
+                        <button id="save-bottom" class="button button-primary save-button" type="button" disabled>Save changes</button>
+                    </div>
                 </div>
             </section>
         </section>
+
+
+        <dialog id="bulk-dialog" class="bulk-dialog">
+            <form method="dialog" class="bulk-form">
+                <div class="bulk-dialog-header">
+                    <div>
+                        <h2>Bulk add staging sites</h2>
+                        <p>Add short names using a project template, or paste complete URLs.</p>
+                    </div>
+                    <button id="bulk-close" class="dialog-close" value="cancel" aria-label="Close" title="Close">×</button>
+                </div>
+
+                <label class="bulk-field">
+                    <span>Template</span>
+                    <input id="bulk-template" type="text" placeholder="https://{slug}-project-server.d3r.com" autocomplete="off">
+                    <small>Short names replace <code>{slug}</code>. The template is inferred from an existing staging site where possible.</small>
+                </label>
+
+                <label class="bulk-field">
+                    <span>Sites</span>
+                    <textarea id="bulk-sites" rows="6" placeholder="blue, red, green
+or paste full URLs, one per line"></textarea>
+                </label>
+
+                <div class="bulk-preview-wrap">
+                    <div class="bulk-preview-heading">
+                        <strong>Preview</strong>
+                        <span id="bulk-summary">Nothing to add yet</span>
+                    </div>
+                    <ul id="bulk-preview" class="bulk-preview"></ul>
+                </div>
+
+                <p id="bulk-error" class="bulk-error" aria-live="polite"></p>
+
+                <div class="bulk-dialog-actions">
+                    <button class="button button-secondary" value="cancel">Cancel</button>
+                    <button id="bulk-confirm" class="button button-primary" type="button" disabled>Add sites</button>
+                </div>
+            </form>
+        </dialog>
 
     </main>
 
