@@ -23,6 +23,52 @@ if (!String.prototype.hasOwnProperty('ucWords')) {
 }
 
 
+function projectKey(value) {
+    return String(value || '').replace(/^\s+|\s+$/g, '').replace(/\s+/g, '').toLowerCase();
+}
+
+function cleanProjectName(value) {
+    return String(value || '').trim().replace(/^[^\p{L}\p{N}]+/u, '').trim();
+}
+
+function findCanonicalProject(project, sites) {
+    var key = projectKey(project);
+    var match = sites.find(function(site) { return projectKey(site.project) === key; });
+    return match ? cleanProjectName(match.project) : cleanProjectName(project);
+}
+
+function inferCurrentSite(link, sites) {
+    var hostname = link.hostname.toLowerCase();
+    var labels = hostname.replace(/^www\./, '').split('.').filter(Boolean);
+    var first = labels[0] || '';
+    var name = '-- LIVE --';
+    var project = first;
+    var icon = '⚡️';
+
+    if (hostname === 'localhost' || labels[labels.length - 1] === 'local') {
+        name = '-- LOCAL --';
+        project = first;
+        icon = '💻';
+    } else if (labels.slice(1).includes('d3r')) {
+        var hostParts = first.split('-').filter(Boolean);
+        name = hostParts.shift() || 'Staging';
+        if (hostParts.length > 1) hostParts.pop();
+        project = hostParts.join(' ') || project;
+        icon = '👁️';
+    }
+
+    project = findCanonicalProject(project, sites);
+    if (!project) project = 'Other';
+
+    return {
+        name: name === '-- LIVE --' || name === '-- LOCAL --' ? name : name.ucWords(),
+        url: link.origin,
+        project: project,
+        icon: icon
+    };
+}
+
+
 function classifySite(site) {
     var name = (site.name || '').toLowerCase();
     var url = (site.url || '').toLowerCase();
@@ -84,19 +130,22 @@ $(document).ready(function() {
             }
 
             if (data.sites.length > 0) {
-                var projects = [];
+                var projects = {};
+                var projectNamesByKey = {};
                 var selected_project;
                 var selected_site;
 
                 data.sites.forEach(function(site) {
-                    if (site.project == '') {
-                        site.project = 'undefined';
-                    }
+                    var rawProject = cleanProjectName(site.project) || 'undefined';
+                    var key = projectKey(rawProject);
+                    var project = projectNamesByKey[key] || rawProject;
+                    projectNamesByKey[key] = project;
+                    site.project = project;
 
-                    if (projects[site.project] === undefined) {
-                        projects[site.project] = [];
+                    if (projects[project] === undefined) {
+                        projects[project] = [];
                     }
-                    projects[site.project].push(site);
+                    projects[project].push(site);
                 });
 
                 var current = tabs[0].url;
@@ -198,36 +247,20 @@ $(document).ready(function() {
                     $add.on('click', function(e) {
                         e.preventDefault();
 
-                        var parts = domain.split('.');
-                        var project = parts[1];
-
-                        if (parts[2] === 'local') {
-                            parts[0] = '-- LOCAL --';
-                        } else if (domain.indexOf('.d3r.') > -1) {
-                            var stagingParts = parts[0].split('-');
-                            parts[0] = stagingParts.shift() + ' - Staging';
-                            stagingParts.pop();
-                            project = stagingParts.join(' ');
-                        } else {
-                            // Assume its live
-                            if (parts[0] === 'www') {
-                                parts.shift();
-                            }
-
-                            project = parts[0];
-                            parts[0] = '-- LIVE --';
+                        var duplicate = data.sites.some(function(site) {
+                            return String(site.url || '').replace(/\/$/, '').toLowerCase() === origin.replace(/\/$/, '').toLowerCase();
+                        });
+                        if (duplicate) {
+                            $add.text('Site already added').prop('disabled', true);
+                            return;
                         }
 
-                        var site = {
-                            'name'    : parts[0].ucWords(),
-                            'url'     : origin,
-                            'project' : project.ucWords(),
-                            'icon'    : '',
-                        };
-
+                        var site = inferCurrentSite(link, data.sites);
                         data.sites.push(site);
+                        $add.text('Adding…').prop('disabled', true);
                         chrome.storage.local.set({sites: data.sites}, function() {
-                            chrome.runtime.openOptionsPage();
+                            $add.text('Site added');
+                            setTimeout(function() { window.location.reload(); }, 250);
                         });
                     });
                 }

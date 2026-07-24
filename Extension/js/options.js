@@ -28,25 +28,46 @@ $(function () {
         return normalise(value).replace(/^[^\p{L}\p{N}]+/u, '').trim();
     }
 
+    function projectKey(value) {
+        return cleanProjectName(value).replace(/\s+/g, '').toLowerCase();
+    }
+
+    function sameProject(a, b) {
+        return projectKey(a) === projectKey(b);
+    }
+
+    function canonicalProjectName(value) {
+        const key = projectKey(value);
+        if (!key) return '';
+        const existing = projectNames.concat(sites.map(site => cleanProjectName(site.project)))
+            .find(name => projectKey(name) === key);
+        return existing ? cleanProjectName(existing) : cleanProjectName(value);
+    }
+
     function normaliseUrlKey(value) {
         const parsed = parseUrl(value);
         return parsed.valid ? parsed.url.toLowerCase() : normalise(value).replace(/\/$/, '').toLowerCase();
     }
 
     function cleanAndDeduplicateSites(sourceSites) {
-        const seen = new Set();
+        const seenUrls = new Set();
+        const canonicalProjects = new Map();
         const cleaned = [];
 
         sourceSites.forEach(site => {
+            const rawProject = cleanProjectName(site.project);
+            const key = projectKey(rawProject);
+            if (key && !canonicalProjects.has(key)) canonicalProjects.set(key, rawProject);
+
             const copy = {
                 name: normalise(site.name),
                 url: normalise(site.url),
-                project: cleanProjectName(site.project),
+                project: key ? canonicalProjects.get(key) : '',
                 icon: normalise(site.icon)
             };
-            const key = normaliseUrlKey(copy.url);
-            if (key && seen.has(key)) return;
-            if (key) seen.add(key);
+            const urlKey = normaliseUrlKey(copy.url);
+            if (urlKey && seenUrls.has(urlKey)) return;
+            if (urlKey) seenUrls.add(urlKey);
             cleaned.push(copy);
         });
 
@@ -95,6 +116,11 @@ $(function () {
         const parts = hostname.replace(/^www\./i, '').split('.').filter(Boolean);
         const environmentTokens = ['local', 'localhost', 'dev', 'test', 'staging', 'stage', 'uat'];
 
+        if (parts.slice(1).includes('d3r')) {
+            const hostParts = (parts[0] || '').split('-').filter(Boolean);
+            if (hostParts.length > 2) return hostParts.slice(1, -1).join(' ');
+            if (hostParts.length > 1) return hostParts.slice(1).join(' ');
+        }
         if (parts.length === 1) return parts[0];
         if (environmentTokens.includes(parts[parts.length - 1].toLowerCase())) return parts[0];
         if (parts.length > 2 && environmentTokens.includes(parts[0].toLowerCase())) return parts[1];
@@ -141,8 +167,12 @@ $(function () {
     }
 
     function uniqueProjects() {
-        const names = projectNames.concat(sites.map(site => cleanProjectName(site.project))).filter(Boolean);
-        return [...new Set(names)].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+        const canonical = new Map();
+        projectNames.concat(sites.map(site => cleanProjectName(site.project))).filter(Boolean).forEach(name => {
+            const key = projectKey(name);
+            if (key && !canonical.has(key)) canonical.set(key, cleanProjectName(name));
+        });
+        return [...canonical.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
     }
 
     function markDirty(message) {
@@ -159,13 +189,13 @@ $(function () {
     }
 
     function projectSiteCount(project) {
-        return sites.filter(site => cleanProjectName(site.project) === project).length;
+        return sites.filter(site => sameProject(site.project, project)).length;
     }
 
     function renderProjects() {
         projectNames = uniqueProjects();
-        const query = normalise($projectSearch.val()).toLowerCase();
-        const filtered = projectNames.filter(name => name.toLowerCase().includes(query));
+        const query = projectKey($projectSearch.val());
+        const filtered = projectNames.filter(name => projectKey(name).includes(query));
         $projectList.empty();
         $projectCount.text(projectNames.length);
         $noProjects.prop('hidden', filtered.length !== 0);
@@ -246,7 +276,7 @@ $(function () {
 
         const indices = [];
         sites.forEach((site, index) => {
-            if (cleanProjectName(site.project) === selectedProject) indices.push(index);
+            if (sameProject(site.project, selectedProject)) indices.push(index);
         });
 
         indices.forEach(index => $sites.append(createSiteRow(sites[index], index)));
@@ -267,8 +297,8 @@ $(function () {
         let base = 'New project';
         let name = base;
         let number = 2;
-        const existing = uniqueProjects().map(project => project.toLowerCase());
-        while (existing.includes(name.toLowerCase())) name = base + ' ' + number++;
+        const existing = uniqueProjects().map(project => projectKey(project));
+        while (existing.includes(projectKey(name))) name = base + ' ' + number++;
         projectNames.push(name);
         selectProject(name);
         markDirty('New project not yet saved');
@@ -279,7 +309,7 @@ $(function () {
         if (!selectedProject) return;
 
         const existingBlankIndex = sites.findIndex(site =>
-            cleanProjectName(site.project) === selectedProject &&
+            sameProject(site.project, selectedProject) &&
             !normalise(site.url) &&
             !normalise(site.name)
         );
@@ -337,7 +367,7 @@ $(function () {
         const newName = cleanProjectName($(this).val());
         if (!selectedProject) return;
         sites.forEach(site => {
-            if (cleanProjectName(site.project) === selectedProject) site.project = newName;
+            if (sameProject(site.project, selectedProject)) site.project = newName;
         });
         const position = projectNames.indexOf(selectedProject);
         if (position !== -1) projectNames[position] = newName;
@@ -352,7 +382,7 @@ $(function () {
             $(this).val(selectedProject || 'New project');
             return;
         }
-        const clash = uniqueProjects().some(project => project !== selectedProject && project.toLowerCase() === cleaned.toLowerCase());
+        const clash = uniqueProjects().some(project => project !== selectedProject && projectKey(project) === projectKey(cleaned));
         if (clash) {
             $saveStatus.text('A project with that name already exists').addClass('error');
             $(this).addClass('invalid').trigger('focus');
@@ -361,7 +391,7 @@ $(function () {
         $(this).removeClass('invalid');
         if (cleaned !== selectedProject) {
             sites.forEach(site => {
-                if (cleanProjectName(site.project) === selectedProject) site.project = cleaned;
+                if (sameProject(site.project, selectedProject)) site.project = cleaned;
             });
             const position = projectNames.indexOf(selectedProject);
             if (position !== -1) projectNames[position] = cleaned;
@@ -464,8 +494,9 @@ $(function () {
         if (projectSiteCount(selectedProject) === 1 && /^New project(?: \d+)?$/.test(selectedProject)) {
             const site = sites[index];
             const oldProject = selectedProject;
-            const suggested = parsed.project.charAt(0).toUpperCase() + parsed.project.slice(1);
-            if (suggested && !uniqueProjects().some(project => project !== oldProject && project.toLowerCase() === suggested.toLowerCase())) {
+            const inferred = parsed.project.charAt(0).toUpperCase() + parsed.project.slice(1);
+            const suggested = canonicalProjectName(inferred) || inferred;
+            if (suggested && !uniqueProjects().some(project => project !== oldProject && projectKey(project) === projectKey(suggested))) {
                 site.project = suggested;
                 selectedProject = suggested;
                 const position = projectNames.indexOf(oldProject);
@@ -529,7 +560,7 @@ $(function () {
         }).get();
         const selectedSites = orderedIndices.map(index => sites[index]);
         let selectedCursor = 0;
-        sites = sites.map(site => cleanProjectName(site.project) === selectedProject ? selectedSites[selectedCursor++] : site);
+        sites = sites.map(site => sameProject(site.project, selectedProject) ? selectedSites[selectedCursor++] : site);
         renderSites();
         markDirty('Site order changed');
     }
@@ -595,7 +626,7 @@ $(function () {
     }
 
     $('#sort').on('click', function () {
-        const selected = sites.filter(site => cleanProjectName(site.project) === selectedProject);
+        const selected = sites.filter(site => sameProject(site.project, selectedProject));
         selected.sort((a, b) => {
             const groupDifference = siteSortGroup(a) - siteSortGroup(b);
             if (groupDifference) return groupDifference;
@@ -604,7 +635,7 @@ $(function () {
             return normalise(a.url).localeCompare(normalise(b.url), undefined, { sensitivity: 'base' });
         });
         let cursor = 0;
-        sites = sites.map(site => cleanProjectName(site.project) === selectedProject ? selected[cursor++] : site);
+        sites = sites.map(site => sameProject(site.project, selectedProject) ? selected[cursor++] : site);
         renderSites();
         markDirty('Sites sorted: local, live, then staging');
     });
@@ -617,7 +648,7 @@ $(function () {
             : `Delete “${selectedProject}”?`;
         if (!window.confirm(message)) return;
 
-        sites = sites.filter(site => cleanProjectName(site.project) !== selectedProject);
+        sites = sites.filter(site => !sameProject(site.project, selectedProject));
         projectNames = projectNames.filter(project => project !== selectedProject);
         const nextProjects = uniqueProjects();
         selectedProject = nextProjects[0] || null;
@@ -669,7 +700,7 @@ $(function () {
                 if (values.length < 2) { skipped++; return; }
                 const name = normalise(values[0]);
                 const parsed = parseUrl(values[1]);
-                const project = cleanProjectName(values[2]);
+                const project = canonicalProjectName(cleanProjectName(values[2]) || parsed.project);
                 const icon = normalise(values[3]);
                 if (!name || !parsed.valid) { skipped++; return; }
 
@@ -726,7 +757,7 @@ $(function () {
     let bulkCandidates = [];
 
     function inferStagingTemplate(project) {
-        const projectSites = sites.filter(site => cleanProjectName(site.project) === project);
+        const projectSites = sites.filter(site => sameProject(site.project, project));
         for (const site of projectSites) {
             const parsed = parseUrl(site.url);
             if (!parsed.valid || !parsed.hostname.includes('.d3r.')) continue;

@@ -76,7 +76,6 @@
                             <input id="project-name" class="project-name-input" type="text" autocomplete="off">
                         </div>
                         <div class="toolbar-actions">
-                            <button id="sort" class="button button-secondary" type="button">Sort sites</button>
                             <button id="delete-project" class="button button-danger-quiet" type="button">Delete project</button>
                         </div>
                     </div>
@@ -87,7 +86,7 @@
                             <span id="site-count" class="count-badge">0</span>
                         </div>
                         <div class="sites-actions">
-                            <button id="bulk-add-site" class="button button-secondary" type="button" title="Add several staging sites from a URL template">Bulk add staging</button>
+                            <button id="bulk-add-site" class="button button-secondary" type="button" title="Add several staging sites from a URL template">+ Bulk add staging</button>
                             <button id="add-site" class="button button-secondary" type="button">+ Add site</button>
                         </div>
                     </div>
@@ -111,8 +110,11 @@
                     </div>
 
                     <div class="bottom-save-bar">
-                        <span class="bottom-save-hint">Changes are stored only when you save.</span>
-                        <button id="save-bottom" class="button button-primary save-button" type="button" disabled>Save changes</button>
+                        <button id="sort" class="button button-secondary" type="button">Sort sites</button>
+                        <div class="bottom-save-actions">
+                            <span class="bottom-save-hint">Changes are stored only when you save.</span>
+                            <button id="save-bottom" class="button button-primary save-button" type="button" disabled>Save changes</button>
+                        </div>
                     </div>
                 </div>
             </section>

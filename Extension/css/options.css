@@ -536,3 +536,8 @@ body {
 .url-suggestion.duplicate {
     color: var(--danger);
 }
+
+
+/* v4.5 action hierarchy */
+.bottom-save-bar { justify-content: space-between; }
+.bottom-save-actions { display: flex; align-items: center; gap: 14px; }
