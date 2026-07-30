@@ -11,7 +11,7 @@
         <header class="page-header">
             <div>
                 <p class="eyebrow">Browser extension settings</p>
-                <h1>Switcher <span class="version-label">v4.7</span></h1>
+                <h1>Switcher <span class="version-label">v4.7.2</span></h1>
                 <p class="subtitle">Manage projects and the sites that belong to them.</p>
             </div>
             <div class="save-area">
@@ -41,6 +41,15 @@
                 <nav id="project-list" class="project-list" aria-label="Projects"></nav>
                 <p id="no-projects" class="empty-note" hidden>No projects yet.</p>
 
+                <div class="data-details">
+                    <p id="import-status" class="import-status" aria-live="polite"></p>
+                    <details class="format-details">
+                        <summary>CSV format</summary>
+                        <code>"name", "url", "project", "icon"</code>
+                        <p>Duplicate or invalid URLs are skipped.</p>
+                    </details>
+                </div>
+
                 <div class="data-actions-panel">
                     <div class="data-actions">
                         <label class="button button-secondary file-button" for="file">
@@ -53,12 +62,6 @@
                             Export all
                         </button>
                     </div>
-                    <p id="import-status" class="import-status" aria-live="polite"></p>
-                    <details class="format-details">
-                        <summary>CSV format</summary>
-                        <code>"name", "url", "project", "icon"</code>
-                        <p>Duplicate or invalid URLs are skipped.</p>
-                    </details>
                 </div>
             </aside>
 

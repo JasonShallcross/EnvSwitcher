@@ -603,3 +603,49 @@ body {
 
 /* Supersede the old collapsible Data panel styles. */
 .data-panel { display: none; }
+
+
+/* v4.7.2 unified workspace footers */
+.project-panel {
+    padding-bottom: 0;
+}
+
+.data-details {
+    margin-top: auto;
+    padding: 8px 0 10px;
+}
+
+.data-details .format-details {
+    margin-top: 0;
+}
+
+.data-actions-panel {
+    flex: 0 0 auto;
+    margin: 0 -14px;
+    padding: 14px;
+    border-top: 1px solid var(--border);
+    background: #f8fafb;
+    box-shadow: 0 -8px 18px rgba(23, 33, 38, .04);
+}
+
+.bottom-save-bar {
+    min-height: 63px;
+    margin-top: 14px;
+    padding-top: 13px;
+    padding-bottom: 13px;
+    box-shadow: 0 -8px 18px rgba(23, 33, 38, .04);
+}
+
+.data-actions-panel {
+    min-height: 63px;
+    display: flex;
+    align-items: center;
+}
+
+.data-actions {
+    width: 100%;
+}
+
+.save-button .button-icon {
+    display: block;
+}
