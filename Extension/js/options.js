@@ -39,7 +39,7 @@ $(function () {
     function canonicalProjectName(value) {
         const key = projectKey(value);
         if (!key) return '';
-        const existing = projectNames.concat(sites.map(site => cleanProjectName(site.project)))
+        const existing = projectNames.concat(sites.filter(Boolean).map(site => cleanProjectName(site.project)))
             .find(name => projectKey(name) === key);
         return existing ? cleanProjectName(existing) : cleanProjectName(value);
     }
@@ -54,7 +54,8 @@ $(function () {
         const canonicalProjects = new Map();
         const cleaned = [];
 
-        sourceSites.forEach(site => {
+        (Array.isArray(sourceSites) ? sourceSites : []).forEach(site => {
+            if (!site || typeof site !== 'object') return;
             const rawProject = cleanProjectName(site.project);
             const key = projectKey(rawProject);
             if (key && !canonicalProjects.has(key)) canonicalProjects.set(key, rawProject);
@@ -168,7 +169,7 @@ $(function () {
 
     function uniqueProjects() {
         const canonical = new Map();
-        projectNames.concat(sites.map(site => cleanProjectName(site.project))).filter(Boolean).forEach(name => {
+        projectNames.concat(sites.filter(Boolean).map(site => cleanProjectName(site.project))).filter(Boolean).forEach(name => {
             const key = projectKey(name);
             if (key && !canonical.has(key)) canonical.set(key, cleanProjectName(name));
         });
@@ -189,7 +190,7 @@ $(function () {
     }
 
     function projectSiteCount(project) {
-        return sites.filter(site => sameProject(site.project, project)).length;
+        return sites.filter(site => site && sameProject(site.project, project)).length;
     }
 
     function renderProjects() {
@@ -216,13 +217,17 @@ $(function () {
     function validateAllRows() {
         let valid = true;
         const seen = new Map();
-        const allUrls = sites.map(site => normalise(site.url).toLowerCase()).filter(Boolean);
+        const allUrls = sites.filter(Boolean).map(site => normalise(site.url).toLowerCase()).filter(Boolean);
         allUrls.forEach(url => seen.set(url, (seen.get(url) || 0) + 1));
 
         $sites.find('.site-row').each(function () {
             const $row = $(this);
             const index = Number($row.attr('data-index'));
             const site = sites[index];
+            if (!site) {
+                $row.remove();
+                return;
+            }
             const shorthand = getStagingSuggestion(site.url, index);
             const parsed = shorthand ? { valid: false, message: 'Press Enter to complete this staging URL.' } : parseUrl(site.url);
             const duplicate = parsed.valid && seen.get(parsed.url.toLowerCase()) > 1;
@@ -341,12 +346,15 @@ $(function () {
         const originalSites = Array.isArray(data.sites) ? data.sites : [];
         sites = cleanAndDeduplicateSites(originalSites);
 
-        const changed = JSON.stringify(sites) !== JSON.stringify(originalSites.map(site => ({
-            name: site.name || '',
-            url: site.url || '',
-            project: site.project || '',
-            icon: site.icon || ''
-        })));
+        const comparableOriginal = originalSites
+            .filter(site => site && typeof site === 'object')
+            .map(site => ({
+                name: site.name || '',
+                url: site.url || '',
+                project: site.project || '',
+                icon: site.icon || ''
+            }));
+        const changed = JSON.stringify(sites) !== JSON.stringify(comparableOriginal);
         if (changed) chrome.storage.local.set({ sites: sites });
 
         projectNames = uniqueProjects();
@@ -367,7 +375,7 @@ $(function () {
         const newName = cleanProjectName($(this).val());
         if (!selectedProject) return;
         sites.forEach(site => {
-            if (sameProject(site.project, selectedProject)) site.project = newName;
+            if (site && sameProject(site.project, selectedProject)) site.project = newName;
         });
         const position = projectNames.indexOf(selectedProject);
         if (position !== -1) projectNames[position] = newName;
@@ -553,14 +561,23 @@ $(function () {
     });
 
     let draggedRow = null;
+    let draggedSiteIndex = null;
+    let droppedOnProject = false;
 
     function saveDisplayedSiteOrder() {
         const orderedIndices = $sites.children('.site-row').map(function () {
             return Number($(this).attr('data-index'));
         }).get();
-        const selectedSites = orderedIndices.map(index => sites[index]);
+        const selectedSites = orderedIndices
+            .map(index => sites[index])
+            .filter(site => site && sameProject(site.project, selectedProject));
+        const expectedCount = sites.filter(site => site && sameProject(site.project, selectedProject)).length;
+        if (selectedSites.length !== expectedCount) {
+            renderSites();
+            return;
+        }
         let selectedCursor = 0;
-        sites = sites.map(site => sameProject(site.project, selectedProject) ? selectedSites[selectedCursor++] : site);
+        sites = sites.map(site => site && sameProject(site.project, selectedProject) ? selectedSites[selectedCursor++] : site);
         renderSites();
         markDirty('Site order changed');
     }
@@ -577,11 +594,46 @@ $(function () {
             return;
         }
         draggedRow = this;
+        draggedSiteIndex = Number($(this).attr('data-index'));
+        droppedOnProject = false;
         $(this).addClass('dragging');
+        $('.project-panel').addClass('site-drag-active');
         const transfer = event.originalEvent.dataTransfer;
         transfer.effectAllowed = 'move';
         // Firefox requires data to be set before it will start a drag operation.
         transfer.setData('text/plain', $(this).attr('data-index'));
+    });
+
+    $projectList.on('dragover', '.project-item', function (event) {
+        if (!draggedRow) return;
+        event.preventDefault();
+        event.stopPropagation();
+        event.originalEvent.dataTransfer.dropEffect = 'move';
+        $('.project-item').removeClass('drop-target');
+        if (!sameProject($(this).attr('data-project'), selectedProject)) {
+            $(this).addClass('drop-target');
+        }
+    });
+
+    $projectList.on('dragleave', '.project-item', function () {
+        $(this).removeClass('drop-target');
+    });
+
+    $projectList.on('drop', '.project-item', function (event) {
+        if (!draggedRow || draggedSiteIndex === null) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const targetProject = canonicalProjectName($(this).attr('data-project'));
+        if (!targetProject || sameProject(targetProject, selectedProject)) return;
+
+        const movedSite = sites[draggedSiteIndex];
+        if (!movedSite) return;
+        movedSite.project = targetProject;
+        droppedOnProject = true;
+        $('.project-item').removeClass('drop-target');
+        $('.project-panel').removeClass('site-drag-active');
+        $(draggedRow).addClass('moved-away');
+        markDirty((movedSite.name || 'Site') + ' moved to ' + targetProject);
     });
 
     $sites.on('dragover', '.site-row', function (event) {
@@ -605,8 +657,17 @@ $(function () {
     $sites.on('dragend', '.site-row', function () {
         const moved = draggedRow === this;
         $(this).removeClass('dragging').removeAttr('draggable');
+        $('.project-item').removeClass('drop-target');
+        $('.project-panel').removeClass('site-drag-active');
         draggedRow = null;
-        if (moved) saveDisplayedSiteOrder();
+        draggedSiteIndex = null;
+        if (moved && droppedOnProject) {
+            renderProjects();
+            renderSites();
+        } else if (moved) {
+            saveDisplayedSiteOrder();
+        }
+        droppedOnProject = false;
     });
 
     $sites.on('pointerup mouseup', '.drag-handle', function () {
@@ -626,7 +687,7 @@ $(function () {
     }
 
     $('#sort').on('click', function () {
-        const selected = sites.filter(site => sameProject(site.project, selectedProject));
+        const selected = sites.filter(site => site && sameProject(site.project, selectedProject));
         selected.sort((a, b) => {
             const groupDifference = siteSortGroup(a) - siteSortGroup(b);
             if (groupDifference) return groupDifference;
@@ -660,6 +721,12 @@ $(function () {
     $save.on('click', function () {
         removeEmptySites();
         sites = cleanAndDeduplicateSites(sites);
+
+        // Cleaning the array can change site indexes. Rebuild the visible rows
+        // before validating so each row still points at the correct site.
+        renderProjects();
+        renderSites();
+
         if (!validateAllRows()) {
             $saveStatus.text('Fix the highlighted sites before saving').addClass('error');
             return;
@@ -731,19 +798,43 @@ $(function () {
         reader.readAsText(file);
     });
 
-    $('#export').on('click', function () {
-        removeEmptySites();
-        const csv = sites.map(site => [site.name, site.url, site.project, site.icon].map(escapeCsv).join(', ')).join('\n');
+    function filenameSlug(value) {
+        return normalise(value)
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '') || 'project';
+    }
+
+    function exportSites(rows, filenamePrefix) {
+        const exportRows = rows.filter(site => site && normalise(site.url));
+        if (!exportRows.length) {
+            $saveStatus.text('There are no sites to export').addClass('error');
+            return;
+        }
+        const csv = exportRows.map(site => [site.name, site.url, site.project, site.icon].map(escapeCsv).join(', ')).join('\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
         const date = new Date();
         const stamp = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
         const anchor = document.createElement('a');
-        anchor.href = URL.createObjectURL(blob);
-        anchor.download = `switcher-sites-${stamp}.csv`;
+        const objectUrl = URL.createObjectURL(blob);
+        anchor.href = objectUrl;
+        anchor.download = `${filenamePrefix}-${stamp}.csv`;
         document.body.appendChild(anchor);
         anchor.click();
         anchor.remove();
-        setTimeout(() => URL.revokeObjectURL(anchor.href), 1000);
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    }
+
+    $('#export').on('click', function () {
+        removeEmptySites();
+        exportSites(sites, 'switcher-sites');
+    });
+
+    $('#export-project').on('click', function () {
+        if (!selectedProject) return;
+        removeEmptySites();
+        const projectSites = sites.filter(site => site && sameProject(site.project, selectedProject));
+        exportSites(projectSites, `switcher-${filenameSlug(selectedProject)}`);
     });
 
 
@@ -757,7 +848,7 @@ $(function () {
     let bulkCandidates = [];
 
     function inferStagingTemplate(project) {
-        const projectSites = sites.filter(site => sameProject(site.project, project));
+        const projectSites = sites.filter(site => site && sameProject(site.project, project));
         for (const site of projectSites) {
             const parsed = parseUrl(site.url);
             if (!parsed.valid || !parsed.hostname.includes('.d3r.')) continue;

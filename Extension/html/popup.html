@@ -31,7 +31,24 @@
 
         <main id="site-panel">
             <ul id="sites" aria-label="Project sites"></ul>
-            <button id="add" type="button">Add this site</button>
+            <form id="add-site-form" hidden>
+                <div class="add-form-title">Add this site</div>
+                <label>
+                    <span>Name</span>
+                    <input id="add-site-name" type="text" autocomplete="off">
+                </label>
+                <label>
+                    <span>Project</span>
+                    <input id="add-site-project" type="text" autocomplete="off">
+                </label>
+                <div id="project-suggestions" class="project-suggestions" hidden></div>
+                <label class="add-icon-field">
+                    <span>Icon</span>
+                    <input id="add-site-icon" type="text" maxlength="4" autocomplete="off">
+                </label>
+                <button id="confirm-add-site" type="submit">Add site</button>
+                <p id="add-site-status" class="add-site-status" aria-live="polite"></p>
+            </form>
         </main>
 
         <footer>

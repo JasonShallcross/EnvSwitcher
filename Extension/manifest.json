@@ -4,7 +4,7 @@
     "default_title": "Switch to Environment",
     "default_popup": "html/popup.html"
   },
-  "name": "Switcher v4.5",
+  "name": "Switcher",
   "description": "Switch the current page between project environments.",
   "icons": {
     "16": "images/env16.png",
@@ -21,6 +21,6 @@
     "https://*/*"
   ],
   "options_page": "html/options.html",
-  "version": "4.5.0",
+  "version": "4.7.1",
   "manifest_version": 3
 }

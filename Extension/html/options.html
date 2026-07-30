@@ -11,12 +11,15 @@
         <header class="page-header">
             <div>
                 <p class="eyebrow">Browser extension settings</p>
-                <h1>Switcher <span class="version-label">v4.4</span></h1>
+                <h1>Switcher <span class="version-label">v4.7</span></h1>
                 <p class="subtitle">Manage projects and the sites that belong to them.</p>
             </div>
             <div class="save-area">
                 <span id="save-status" class="save-status" aria-live="polite">All changes saved</span>
-                <button id="save" class="button button-primary save-button" type="button" disabled>Save changes</button>
+                <button id="save" class="button button-primary save-button" type="button" disabled>
+                    <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12l2 2v16H5V3zm2 2v5h8V5H7zm0 14h10v-6H7v6zm2-12h4V5H9v2z"/></svg>
+                    Save changes
+                </button>
             </div>
         </header>
 
@@ -38,28 +41,25 @@
                 <nav id="project-list" class="project-list" aria-label="Projects"></nav>
                 <p id="no-projects" class="empty-note" hidden>No projects yet.</p>
 
-                <details class="data-panel">
-                    <summary>
-                        <span>
-                            <strong>Data</strong>
-                            <small>Import / Export</small>
-                        </span>
-                        <span class="chevron">⌄</span>
-                    </summary>
-                    <div class="data-panel-body">
-                        <div class="data-actions">
-                            <label class="button button-secondary file-button" for="file">Import CSV</label>
-                            <input type="file" id="file" accept=".csv,text/csv" hidden>
-                            <button id="export" class="button button-secondary" type="button">Export CSV</button>
-                        </div>
-                        <p id="import-status" class="import-status" aria-live="polite"></p>
-                        <details class="format-details">
-                            <summary>CSV format</summary>
-                            <code>"name", "url", "project", "icon"</code>
-                            <p>Duplicate or invalid URLs are skipped.</p>
-                        </details>
+                <div class="data-actions-panel">
+                    <div class="data-actions">
+                        <label class="button button-secondary file-button" for="file">
+                            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 16V7.83L8.41 10.41 7 9l5-5 5 5-1.41 1.41L13 7.83V16h-2zM5 20v-6h2v4h10v-4h2v6H5z"/></svg>
+                            Import CSV
+                        </label>
+                        <input type="file" id="file" accept=".csv,text/csv" hidden>
+                        <button id="export" class="button button-secondary" type="button">
+                            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4h2v8.17l2.59-2.58L17 11l-5 5-5-5 1.41-1.41L11 12.17V4zM5 18h14v2H5v-2z"/></svg>
+                            Export all
+                        </button>
                     </div>
-                </details>
+                    <p id="import-status" class="import-status" aria-live="polite"></p>
+                    <details class="format-details">
+                        <summary>CSV format</summary>
+                        <code>"name", "url", "project", "icon"</code>
+                        <p>Duplicate or invalid URLs are skipped.</p>
+                    </details>
+                </div>
             </aside>
 
             <section class="site-panel">
@@ -76,7 +76,10 @@
                             <input id="project-name" class="project-name-input" type="text" autocomplete="off">
                         </div>
                         <div class="toolbar-actions">
-                            <button id="delete-project" class="button button-danger-quiet" type="button">Delete project</button>
+                            <button id="delete-project" class="button button-danger-quiet" type="button">
+                                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4V3h8v1h5v2H3V4h5zm-2 4h12l-1 13H7L6 8zm3 2v8h2v-8H9zm4 0v8h2v-8h-2z"/></svg>
+                                Delete project
+                            </button>
                         </div>
                     </div>
 
@@ -86,8 +89,14 @@
                             <span id="site-count" class="count-badge">0</span>
                         </div>
                         <div class="sites-actions">
-                            <button id="bulk-add-site" class="button button-secondary" type="button" title="Add several staging sites from a URL template">+ Bulk add staging</button>
-                            <button id="add-site" class="button button-secondary" type="button">+ Add site</button>
+                            <button id="bulk-add-site" class="button button-secondary" type="button" title="Add several staging sites from a URL template">
+                                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10v2H4V6zm0 5h10v2H4v-2zm0 5h7v2H4v-2zm14-5v3h3v2h-3v3h-2v-3h-3v-2h3v-3h2z"/></svg>
+                                Bulk add staging
+                            </button>
+                            <button id="add-site" class="button button-secondary" type="button">
+                                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z"/></svg>
+                                Add site
+                            </button>
                         </div>
                     </div>
 
@@ -110,10 +119,22 @@
                     </div>
 
                     <div class="bottom-save-bar">
-                        <button id="sort" class="button button-secondary" type="button">Sort sites</button>
+                        <div class="bottom-list-actions">
+                            <button id="sort" class="button button-secondary" type="button">
+                                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h2v12.17l2.59-2.58L13 15l-5 5-5-5 1.41-1.41L7 16.17V4zm7 2h7v2h-7V6zm0 5h5v2h-5v-2zm0 5h3v2h-3v-2z"/></svg>
+                                Sort sites
+                            </button>
+                            <button id="export-project" class="button button-secondary" type="button">
+                                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4h2v8.17l2.59-2.58L17 11l-5 5-5-5 1.41-1.41L11 12.17V4zM5 18h14v2H5v-2z"/></svg>
+                                Export project
+                            </button>
+                        </div>
                         <div class="bottom-save-actions">
                             <span class="bottom-save-hint">Changes are stored only when you save.</span>
-                            <button id="save-bottom" class="button button-primary save-button" type="button" disabled>Save changes</button>
+                            <button id="save-bottom" class="button button-primary save-button" type="button" disabled>
+                                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12l2 2v16H5V3zm2 2v5h8V5H7zm0 14h10v-6H7v6zm2-12h4V5H9v2z"/></svg>
+                                Save changes
+                            </button>
                         </div>
                     </div>
                 </div>

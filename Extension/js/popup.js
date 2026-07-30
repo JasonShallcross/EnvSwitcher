@@ -31,19 +31,43 @@ function cleanProjectName(value) {
     return String(value || '').trim().replace(/^[^\p{L}\p{N}]+/u, '').trim();
 }
 
+function capitaliseFirst(value) {
+    value = cleanProjectName(value);
+    return value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
+}
+
 function findCanonicalProject(project, sites) {
     var key = projectKey(project);
     var match = sites.find(function(site) { return projectKey(site.project) === key; });
-    return match ? cleanProjectName(match.project) : cleanProjectName(project);
+    return match ? cleanProjectName(match.project) : capitaliseFirst(project);
 }
 
 function inferCurrentSite(link, sites) {
     var hostname = link.hostname.toLowerCase();
-    var labels = hostname.replace(/^www\./, '').split('.').filter(Boolean);
+    var originalLabels = hostname.split('.').filter(Boolean);
+    var labels = originalLabels[0] === 'www' ? originalLabels.slice(1) : originalLabels.slice();
     var first = labels[0] || '';
     var name = '-- LIVE --';
     var project = first;
     var icon = '⚡️';
+
+    // For live domains, use the registrable-looking domain handle rather than
+    // a regional or functional subdomain (us.astrolighting.com -> astrolighting).
+    if (labels.length >= 2) {
+        var compoundSuffixes = ['co.uk', 'org.uk', 'ac.uk', 'com.au', 'co.nz'];
+        var suffix = labels.slice(-2).join('.');
+        var projectIndex = compoundSuffixes.indexOf(suffix) > -1 && labels.length >= 3
+            ? labels.length - 3
+            : labels.length - 2;
+        project = labels[projectIndex];
+
+        // Distinguish regional or functional live sites from the main www/bare domain.
+        // us.astrolighting.com -> -- LIVE (US) --
+        var liveSubdomains = labels.slice(0, projectIndex);
+        if (liveSubdomains.length) {
+            name = '-- LIVE (' + liveSubdomains[0].toUpperCase() + ') --';
+        }
+    }
 
     if (hostname === 'localhost' || labels[labels.length - 1] === 'local') {
         name = '-- LOCAL --';
@@ -66,6 +90,32 @@ function inferCurrentSite(link, sites) {
         project: project,
         icon: icon
     };
+}
+
+
+function projectSuggestions(inferredProject, sites, environment) {
+    var inferredKey = projectKey(inferredProject);
+    if (!inferredKey) return [];
+
+    var unique = {};
+    sites.forEach(function(site) {
+        var name = cleanProjectName(site.project);
+        var key = projectKey(name);
+        if (key && !unique[key]) unique[key] = name;
+    });
+
+    return Object.keys(unique).map(function(key) {
+        var score = 0;
+        if (key === inferredKey) score = 100;
+        else if (environment === 'live' && inferredKey.indexOf(key) > -1) score = 80 + Math.min(key.length, 15);
+        else if (environment === 'staging' && key.indexOf(inferredKey) > -1) score = 80 + Math.min(inferredKey.length, 15);
+        else if (inferredKey.indexOf(key) > -1 || key.indexOf(inferredKey) > -1) score = 55 + Math.min(key.length, inferredKey.length);
+        return {name: unique[key], key: key, score: score};
+    }).filter(function(item) {
+        return item.score > 0 && item.key !== inferredKey;
+    }).sort(function(a, b) {
+        return b.score - a.score || a.name.localeCompare(b.name, undefined, {sensitivity: 'base'});
+    }).slice(0, 3).map(function(item) { return item.name; });
 }
 
 
@@ -242,25 +292,81 @@ $(document).ready(function() {
                     $projects.val(escape(selected_project)).trigger('change');
                 } else {
                     var $add = $('#add');
-                    $add.css('display', 'block');
+                    var $form = $('#add-site-form');
+                    var $name = $('#add-site-name');
+                    var $project = $('#add-site-project');
+                    var $icon = $('#add-site-icon');
+                    var $suggestions = $('#project-suggestions');
+                    var $confirm = $('#confirm-add-site');
+                    var $status = $('#add-site-status');
+                    var inferredSite = inferCurrentSite(link, data.sites);
+                    var environment = link.hostname.toLowerCase().split('.').slice(1).includes('d3r') ? 'staging' : 'live';
 
-                    $add.on('click', function(e) {
-                        e.preventDefault();
+                    $add.hide();
 
-                        var duplicate = data.sites.some(function(site) {
-                            return String(site.url || '').replace(/\/$/, '').toLowerCase() === origin.replace(/\/$/, '').toLowerCase();
+                    function renderSuggestions(value) {
+                        var suggestions = projectSuggestions(value, data.sites, environment);
+                        $suggestions.empty().prop('hidden', suggestions.length === 0);
+                        suggestions.forEach(function(name) {
+                            $('<button>', {
+                                type: 'button',
+                                class: 'project-suggestion',
+                                text: name
+                            }).on('click', function() {
+                                $project.val(name);
+                                $suggestions.empty().prop('hidden', true);
+                            }).appendTo($suggestions);
                         });
-                        if (duplicate) {
-                            $add.text('Site already added').prop('disabled', true);
+                    }
+
+                    var duplicate = data.sites.some(function(site) {
+                        return String(site.url || '').replace(/\/$/, '').toLowerCase() === origin.replace(/\/$/, '').toLowerCase();
+                    });
+
+                    $name.val(inferredSite.name);
+                    $project.val(inferredSite.project);
+                    $icon.val(inferredSite.icon);
+                    renderSuggestions(inferredSite.project);
+                    $form.removeAttr('hidden').show();
+
+                    if (duplicate) {
+                        $status.text('Site already added');
+                        $form.find('input, button').prop('disabled', true);
+                    } else {
+                        requestAnimationFrame(function() {
+                            $project[0].focus();
+                            $project[0].select();
+                        });
+                    }
+
+                    $project.on('input', function() {
+                        renderSuggestions($(this).val());
+                    });
+
+                    $form.on('submit', function(e) {
+                        e.preventDefault();
+                        var projectValue = cleanProjectName($project.val());
+                        var nameValue = String($name.val() || '').trim();
+                        var iconValue = String($icon.val() || '').trim();
+
+                        if (!nameValue || !projectValue) {
+                            $status.text('Name and project are required.');
                             return;
                         }
 
-                        var site = inferCurrentSite(link, data.sites);
+                        var canonicalProject = findCanonicalProject(projectValue, data.sites);
+                        var site = {
+                            name: nameValue,
+                            url: origin,
+                            project: canonicalProject || capitaliseFirst(projectValue),
+                            icon: iconValue || inferredSite.icon
+                        };
+
                         data.sites.push(site);
-                        $add.text('Adding…').prop('disabled', true);
+                        $confirm.text('Adding…').prop('disabled', true);
                         chrome.storage.local.set({sites: data.sites}, function() {
-                            $add.text('Site added');
-                            setTimeout(function() { window.location.reload(); }, 250);
+                            $status.text('Site added');
+                            setTimeout(function() { window.location.reload(); }, 180);
                         });
                     });
                 }

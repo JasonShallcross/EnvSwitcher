@@ -541,3 +541,65 @@ body {
 /* v4.5 action hierarchy */
 .bottom-save-bar { justify-content: space-between; }
 .bottom-save-actions { display: flex; align-items: center; gap: 14px; }
+
+
+.project-panel.site-drag-active {
+    box-shadow: inset 0 0 0 2px rgba(0, 171, 206, .22);
+}
+
+.project-panel.site-drag-active .project-item:not(.active) {
+    cursor: grabbing;
+}
+
+.project-panel.site-drag-active .project-item:not(.active):hover,
+.project-item.drop-target {
+    background: var(--accent-soft);
+    box-shadow: inset 0 0 0 2px var(--accent);
+    color: #176878;
+}
+
+.project-item.drop-target::after {
+    content: 'Move here';
+    margin-left: auto;
+    padding-left: 8px;
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.project-panel.site-drag-active .project-item.active {
+    opacity: .55;
+}
+
+.site-row.moved-away { opacity: .35; }
+
+
+/* v4.7 visible import/export and button icon polish */
+.button-icon {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+    fill: currentColor;
+}
+.button { gap: 7px; }
+
+.data-actions-panel {
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+.data-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+}
+.data-actions .button {
+    min-height: 34px;
+    padding: 6px 7px;
+    font-size: 12px;
+}
+.file-button { cursor: pointer; }
+.bottom-list-actions { display: flex; align-items: center; gap: 8px; }
+
+/* Supersede the old collapsible Data panel styles. */
+.data-panel { display: none; }
