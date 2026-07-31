@@ -12,7 +12,7 @@
     <div id="dialog">
         <header class="popup-header">
             <div class="title-row">
-                <h1>Switcher <span id="version"></span></h1>
+                <h1>Switcher <span id="version"></span><span id="advanced-badge" class="advanced-badge" hidden>Advanced Mode</span></h1>
                 <nav id="tools" aria-label="Switcher tools">
                     <a href="#edit" id="edit" class="icon-button" title="Edit this page in CP" aria-label="Edit this page in CP">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15.5V20h4.5L19.8 8.7l-4.5-4.5L4 15.5Zm17.7-9.6a1 1 0 0 0 0-1.4l-2.2-2.2a1 1 0 0 0-1.4 0l-1.7 1.7 4.5 4.5 1.8-1.6Z"/></svg>
@@ -33,26 +33,28 @@
             <ul id="sites" aria-label="Project sites"></ul>
             <form id="add-site-form" hidden>
                 <div class="add-form-title">Add this site</div>
-                <label>
-                    <span>Name</span>
-                    <input id="add-site-name" type="text" autocomplete="off">
-                </label>
+                <div class="add-fields-row">
+                    <label class="add-name-field">
+                        <span>Name</span>
+                        <input id="add-site-name" type="text" autocomplete="off">
+                    </label>
+                    <label class="add-icon-field">
+                        <span>Icon</span>
+                        <input id="add-site-icon" type="text" maxlength="4" autocomplete="off">
+                    </label>
+                </div>
                 <label>
                     <span>Project</span>
                     <input id="add-site-project" type="text" autocomplete="off">
                 </label>
                 <div id="project-suggestions" class="project-suggestions" hidden></div>
-                <label class="add-icon-field">
-                    <span>Icon</span>
-                    <input id="add-site-icon" type="text" maxlength="4" autocomplete="off">
-                </label>
                 <button id="confirm-add-site" type="submit">Add site</button>
                 <p id="add-site-status" class="add-site-status" aria-live="polite"></p>
             </form>
         </main>
 
         <footer>
-            <div id="debug" aria-label="Debug output">
+            <div id="debug" aria-label="Debug output" hidden>
                 <span class="debug-label" title="Debug output">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8h-2.8a5.7 5.7 0 0 0-1.1-1.6L17.7 4.8l-1.4-1.4-1.8 1.8A6.8 6.8 0 0 0 13 4.6V2h-2v2.6a6.8 6.8 0 0 0-1.5.6L7.7 3.4 6.3 4.8l1.6 1.6A5.7 5.7 0 0 0 6.8 8H4v2h2.2v2H4v2h2.2v.5A5.5 5.5 0 0 0 11.7 20h.6a5.5 5.5 0 0 0 5.5-5.5V14H20v-2h-2.2v-2H20V8Zm-4.2 6.5a3.5 3.5 0 0 1-7 0V10h7v4.5Z"/></svg>
                 </span>

@@ -649,3 +649,33 @@ body {
 .save-button .button-icon {
     display: block;
 }
+
+/* Single-project mode keeps global import/export available but removes project navigation. */
+body.single-project-mode .project-panel .panel-heading,
+body.single-project-mode .project-panel .search-box,
+body.single-project-mode .project-panel .project-list,
+body.single-project-mode .project-panel .empty-note {
+    display: none;
+}
+
+body.single-project-mode .project-panel {
+    justify-content: flex-end;
+}
+
+body.single-project-mode .project-title-block label {
+    display: none;
+}
+
+.advanced-mode-badge {
+    display: inline-flex;
+    margin-left: 8px;
+    padding: 4px 8px;
+    align-items: center;
+    vertical-align: middle;
+    border-radius: 999px;
+    background: #e8f7fa;
+    color: #087d96;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .15px;
+}

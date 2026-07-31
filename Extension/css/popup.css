@@ -39,8 +39,9 @@ select {
 
 #dialog {
     display: flex;
-    max-height: 520px;
+    max-height: 580px;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .popup-header {
@@ -57,7 +58,10 @@ select {
 }
 
 h1 {
+    display: flex;
     margin: 0;
+    align-items: center;
+    gap: 5px;
     color: var(--accent);
     font-size: 16px;
     line-height: 1;
@@ -135,15 +139,20 @@ h1 {
 }
 
 #site-panel {
+    display: flex;
     min-height: 0;
     flex: 1;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 #sites {
     display: flex;
+    min-height: 70px;
     max-height: 390px;
     margin: 0;
     padding: 7px;
+    flex: 1 1 auto;
     overflow-y: auto;
     scrollbar-width: thin;
     list-style: none;
@@ -301,10 +310,12 @@ footer {
 
 
 #add-site-form {
-    margin: 10px 12px 12px;
-    padding: 10px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    margin: 0;
+    padding: 10px 12px 11px;
+    flex: 0 0 auto;
+    border: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
     background: #fafcfc;
 }
 
@@ -385,3 +396,36 @@ footer {
 
 #confirm-add-site:disabled { opacity: .65; cursor: default; }
 .add-site-status { min-height: 0; margin: 6px 0 0; color: var(--muted); font-size: 10px; }
+
+.advanced-badge {
+    padding: 3px 5px;
+    border-radius: 999px;
+    background: #e8f7fa;
+    color: #087d96;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .15px;
+    white-space: nowrap;
+}
+
+.add-fields-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 52px;
+    gap: 7px;
+}
+
+.add-fields-row label {
+    min-width: 0;
+}
+
+.add-icon-field {
+    width: auto;
+}
+
+body.has-add-form #sites {
+    max-height: 245px;
+}
+
+body.has-add-form .popup-header {
+    padding-bottom: 8px;
+}

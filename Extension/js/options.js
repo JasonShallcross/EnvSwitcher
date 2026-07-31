@@ -19,6 +19,7 @@ $(function () {
     let selectedProject = null;
     let dirty = false;
     let deletedSite = null;
+    let singleProjectMode = null;
 
     function normalise(value) {
         return String(value || '').trim();
@@ -176,6 +177,24 @@ $(function () {
         return [...canonical.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
     }
 
+    function resolveSingleProjectMode() {
+        const projects = uniqueProjects();
+        const override = localStorage.getItem('singleProject');
+        if (override) {
+            const match = projects.find(project => sameProject(project, override));
+            if (match) return match;
+        }
+        return projects.length === 1 ? projects[0] : null;
+    }
+
+    function applySingleProjectMode() {
+        singleProjectMode = resolveSingleProjectMode();
+        document.body.classList.toggle('single-project-mode', Boolean(singleProjectMode));
+        if (singleProjectMode && !sameProject(selectedProject, singleProjectMode)) {
+            selectedProject = singleProjectMode;
+        }
+    }
+
     function markDirty(message) {
         dirty = true;
         $save.prop('disabled', false);
@@ -195,8 +214,11 @@ $(function () {
 
     function renderProjects() {
         projectNames = uniqueProjects();
+        applySingleProjectMode();
         const query = projectKey($projectSearch.val());
-        const filtered = projectNames.filter(name => projectKey(name).includes(query));
+        const filtered = projectNames.filter(name =>
+            (!singleProjectMode || sameProject(name, singleProjectMode)) && projectKey(name).includes(query)
+        );
         $projectList.empty();
         $projectCount.text(projectNames.length);
         $noProjects.prop('hidden', filtered.length !== 0);
@@ -342,7 +364,8 @@ $(function () {
         sites = sites.filter(site => normalise(site.name) || normalise(site.url));
     }
 
-    chrome.storage.local.get({ sites: [] }, function (data) {
+    chrome.storage.local.get({ sites: [], advancedMode: false }, function (data) {
+        $('#advanced-mode-badge').prop('hidden', !data.advancedMode);
         const originalSites = Array.isArray(data.sites) ? data.sites : [];
         sites = cleanAndDeduplicateSites(originalSites);
 
@@ -358,8 +381,25 @@ $(function () {
         if (changed) chrome.storage.local.set({ sites: sites });
 
         projectNames = uniqueProjects();
+        applySingleProjectMode();
         renderProjects();
-        if (projectNames.length) selectProject(projectNames[0]);
+        if (singleProjectMode) selectProject(singleProjectMode);
+        else if (projectNames.length) selectProject(projectNames[0]);
+    });
+
+    // Hidden global developer toggle. Advanced mode applies to the entire extension.
+    $(document).on('keydown', function (event) {
+        if (!(event.metaKey && event.shiftKey && String(event.key).toLowerCase() === 'd')) return;
+        event.preventDefault();
+        chrome.storage.local.get({ advancedMode: false }, function (data) {
+            const enabled = !Boolean(data.advancedMode);
+            chrome.storage.local.set({ advancedMode: enabled }, function () {
+                $('#advanced-mode-badge').prop('hidden', !enabled);
+                $saveStatus
+                    .text('Advanced mode ' + (enabled ? 'enabled' : 'disabled'))
+                    .removeClass('dirty error');
+            });
+        });
     });
 
     $projectSearch.on('input', renderProjects);

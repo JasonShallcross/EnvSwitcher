@@ -1,26 +1,26 @@
 {
-  "action": {
-    "default_icon": "images/env48.png",
-    "default_title": "Switch to Environment",
-    "default_popup": "html/popup.html"
-  },
-  "name": "Switcher",
-  "description": "Switch the current page between project environments.",
-  "icons": {
-    "16": "images/env16.png",
-    "48": "images/env48.png",
-    "128": "images/env128.png"
-  },
-  "permissions": [
-    "tabs",
-    "storage",
-    "downloads"
-  ],
-  "host_permissions": [
-    "http://*/*",
-    "https://*/*"
-  ],
-  "options_page": "html/options.html",
-  "version": "4.7.2",
-  "manifest_version": 3
+    "action": {
+        "default_icon": "images/env48.png",
+        "default_title": "Switch to Environment",
+        "default_popup": "html/popup.html"
+    },
+    "name": "Switcher",
+    "description": "Switch the current page between project environments.",
+    "icons": {
+        "16": "images/env16.png",
+        "48": "images/env48.png",
+        "128": "images/env128.png"
+    },
+    "permissions": [
+        "tabs",
+        "storage",
+        "downloads"
+    ],
+    "host_permissions": [
+        "http://*/*",
+        "https://*/*"
+    ],
+    "options_page": "html/options.html",
+    "version": "4.8.1",
+    "manifest_version": 3
 }

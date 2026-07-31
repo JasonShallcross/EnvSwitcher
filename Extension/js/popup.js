@@ -174,10 +174,12 @@ $(document).ready(function() {
     $('#version').text('v' + manifest.version);
 
     chrome.tabs.query({currentWindow: true, active: true}, function(tabs) {
-        chrome.storage.local.get({sites: []}, function(data) {
+        chrome.storage.local.get({sites: [], advancedMode: false}, function(data) {
             if (!data) {
                 data = {sites: []};
             }
+
+            $('#advanced-badge').prop('hidden', !data.advancedMode);
 
             if (data.sites.length > 0) {
                 var projects = {};
@@ -198,11 +200,22 @@ $(document).ready(function() {
                     projects[project].push(site);
                 });
 
+                var projectKeys = Object.keys(projects);
+                var singleProjectOverride = localStorage.getItem('singleProject');
+                var singleProject = null;
+                if (singleProjectOverride) {
+                    singleProject = projectKeys.find(function(project) {
+                        return projectKey(project) === projectKey(singleProjectOverride);
+                    }) || null;
+                }
+                if (!singleProject && projectKeys.length === 1) singleProject = projectKeys[0];
+
                 var current = tabs[0].url;
 
                 var link = new URL(current);
                 var domain = link.hostname;
                 var origin = link.origin;
+                var canAddCurrentSite = /^https?:$/.test(link.protocol) && Boolean(link.hostname);
 
                 var $projects = $('#projects');
                 var $sites  = $('#sites');
@@ -211,6 +224,7 @@ $(document).ready(function() {
                 Object.keys(projects)
                     .sort(function(a, b) { return a.localeCompare(b, undefined, {sensitivity: 'base'}); })
                     .forEach(function(project) {
+                    if (singleProject && projectKey(project) !== projectKey(singleProject)) return;
                     $('<option value="' + escape(project) + '">' + project + '</option>').appendTo($projects);
 
                     for (var s in projects[project]) {
@@ -299,51 +313,69 @@ $(document).ready(function() {
                     var $suggestions = $('#project-suggestions');
                     var $confirm = $('#confirm-add-site');
                     var $status = $('#add-site-status');
-                    var inferredSite = inferCurrentSite(link, data.sites);
-                    var environment = link.hostname.toLowerCase().split('.').slice(1).includes('d3r') ? 'staging' : 'live';
+                    var sortedProjectKeys = projectKeys.slice().sort(function(a, b) {
+                        return a.localeCompare(b, undefined, {sensitivity: 'base'});
+                    });
+                    var inferredSite = canAddCurrentSite ? inferCurrentSite(link, data.sites) : null;
+                    var environment = canAddCurrentSite && link.hostname.toLowerCase().split('.').slice(1).includes('d3r') ? 'staging' : 'live';
+                    var initialSuggestions = inferredSite ? projectSuggestions(inferredSite.project, data.sites, environment) : [];
+                    var exactProject = inferredSite ? projectKeys.find(function(project) {
+                        return projectKey(project) === projectKey(inferredSite.project);
+                    }) : null;
+                    var launcherProject = singleProject || exactProject || initialSuggestions[0] || sortedProjectKeys[0];
 
-                    $add.hide();
-
-                    function renderSuggestions(value) {
-                        var suggestions = projectSuggestions(value, data.sites, environment);
-                        $suggestions.empty().prop('hidden', suggestions.length === 0);
-                        suggestions.forEach(function(name) {
-                            $('<button>', {
-                                type: 'button',
-                                class: 'project-suggestion',
-                                text: name
-                            }).on('click', function() {
-                                $project.val(name);
-                                $suggestions.empty().prop('hidden', true);
-                            }).appendTo($suggestions);
-                        });
+                    // Keep Switcher useful as a launcher even when the current page is unknown.
+                    // The site list comes first; the compact add form sits below it.
+                    if (launcherProject) {
+                        $projects.val(escape(launcherProject));
+                        updateSiteSearch(escape(launcherProject), false);
+                        renderProjectSites(escape(launcherProject), $sites, '');
                     }
 
-                    var duplicate = data.sites.some(function(site) {
-                        return String(site.url || '').replace(/\/$/, '').toLowerCase() === origin.replace(/\/$/, '').toLowerCase();
-                    });
+                    if (canAddCurrentSite) {
+                        $add.hide();
 
-                    $name.val(inferredSite.name);
-                    $project.val(inferredSite.project);
-                    $icon.val(inferredSite.icon);
-                    renderSuggestions(inferredSite.project);
-                    $form.removeAttr('hidden').show();
+                        function renderSuggestions(value) {
+                            var suggestions = projectSuggestions(value, data.sites, environment);
+                            $suggestions.empty().prop('hidden', suggestions.length === 0);
+                            suggestions.forEach(function(name) {
+                                $('<button>', {
+                                    type: 'button',
+                                    class: 'project-suggestion',
+                                    text: name
+                                }).on('click', function() {
+                                    $project.val(name);
+                                    $suggestions.empty().prop('hidden', true);
+                                }).appendTo($suggestions);
+                            });
+                        }
 
-                    if (duplicate) {
-                        $status.text('Site already added');
-                        $form.find('input, button').prop('disabled', true);
-                    } else {
-                        requestAnimationFrame(function() {
-                            $project[0].focus();
-                            $project[0].select();
+                        var duplicate = data.sites.some(function(site) {
+                            return String(site.url || '').replace(/\/$/, '').toLowerCase() === origin.replace(/\/$/, '').toLowerCase();
                         });
-                    }
 
-                    $project.on('input', function() {
-                        renderSuggestions($(this).val());
-                    });
+                        $name.val(inferredSite.name);
+                        $project.val(inferredSite.project);
+                        $icon.val(inferredSite.icon);
+                        renderSuggestions(inferredSite.project);
+                        $form.removeAttr('hidden').show();
+                        $('body').addClass('has-add-form');
 
-                    $form.on('submit', function(e) {
+                        if (duplicate) {
+                            $status.text('Site already added');
+                            $form.find('input, button').prop('disabled', true);
+                        } else {
+                            requestAnimationFrame(function() {
+                                $project[0].focus();
+                                $project[0].select();
+                            });
+                        }
+
+                        $project.on('input', function() {
+                            renderSuggestions($(this).val());
+                        });
+
+                        $form.on('submit', function(e) {
                         e.preventDefault();
                         var projectValue = cleanProjectName($project.val());
                         var nameValue = String($name.val() || '').trim();
@@ -368,7 +400,8 @@ $(document).ready(function() {
                             $status.text('Site added');
                             setTimeout(function() { window.location.reload(); }, 180);
                         });
-                    });
+                        });
+                    }
                 }
 
                 if ($projects.find('option').length <= 2) {
@@ -378,6 +411,8 @@ $(document).ready(function() {
                         $sites.find('li').addClass('show');
                     }
                 }
+
+                $('#debug').prop('hidden', !data.advancedMode || !canAddCurrentSite);
 
                 $('#debug a').on('click', function(e) {
                     const debugLink = link;
@@ -389,7 +424,7 @@ $(document).ready(function() {
                 });
 
                 var $edit = $('#edit');
-                if (link.pathname.indexOf('/cp') > -1) {
+                if (!canAddCurrentSite || link.pathname.indexOf('/cp') > -1) {
                     $edit.hide();
                 } else {
                     $edit.attr('href', link.protocol + '//' + link.hostname + '/cp' + link.pathname);
