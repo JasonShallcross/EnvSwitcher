@@ -179,7 +179,6 @@ $(document).ready(function() {
                 data = {sites: []};
             }
 
-            $('#advanced-badge').prop('hidden', !data.advancedMode);
 
             if (data.sites.length > 0) {
                 var projects = {};

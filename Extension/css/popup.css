@@ -397,16 +397,6 @@ footer {
 #confirm-add-site:disabled { opacity: .65; cursor: default; }
 .add-site-status { min-height: 0; margin: 6px 0 0; color: var(--muted); font-size: 10px; }
 
-.advanced-badge {
-    padding: 3px 5px;
-    border-radius: 999px;
-    background: #e8f7fa;
-    color: #087d96;
-    font-size: 8px;
-    font-weight: 700;
-    letter-spacing: .15px;
-    white-space: nowrap;
-}
 
 .add-fields-row {
     display: grid;
